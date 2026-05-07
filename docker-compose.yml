@@ -1,0 +1,134 @@
+version: "3.9"
+
+services:
+  frontend:
+    build: ./frontend
+    container_name: react_app
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000   # React uses this to call the backend
+    depends_on:
+      - backend
+    networks:
+      - chefai
+
+  backend:
+    build: ./backend
+    container_name: fastapi_app
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - ./uploads:/app/uploads
+    environment:
+      # Database
+      DATABASE_URL: postgresql://chef_user:chef_pass@postgres:5432/chefai
+      BASE_URL: http://localhost:8000
+      # RAG Pipeline
+      QDRANT_URL: http://qdrant:6333
+      OLLAMA_URL: http://ollama:11434
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+      qdrant:
+        condition: service_started
+      redis:
+        condition: service_started
+    networks:
+      - chefai
+
+  celery_worker:
+    build: ./backend
+    container_name: celery_worker
+    command: celery -A tasks.celery_app worker --loglevel=info
+    volumes:
+      - ./backend:/app
+      - ./uploads:/app/uploads
+    environment:
+      DATABASE_URL: postgresql://chef_user:chef_pass@postgres:5432/chefai
+      QDRANT_URL: http://qdrant:6333
+      OLLAMA_URL: http://ollama:11434
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      - redis
+      - postgres
+      - qdrant
+      - ollama
+    networks:
+      - chefai
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis_cache
+    ports:
+      - "6379:6379"
+    networks:
+      - chefai
+
+  postgres:
+    image: postgres:15
+    container_name: recipe_db
+    restart: always
+    environment:
+      POSTGRES_USER: chef_user
+      POSTGRES_PASSWORD: chef_pass
+      POSTGRES_DB: chefai
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chef_user -d chefai"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - chefai
+
+  # Qdrant vector database
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant_db
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      QDRANT_API_KEY: ""  # Set to empty for no auth (use strong key in production)
+    networks:
+      - chefai
+    restart: always
+
+  # Ollama for LLM and embeddings
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama_llm
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+    networks:
+      - chefai
+    restart: always
+    # Note: Pull required models on first startup
+    # docker exec ollama_llm ollama pull llama2
+    # docker exec ollama_llm ollama pull mistral
+
+volumes:
+  postgres_data:
+  qdrant_data:
+  ollama_data:
+
+networks:
+  chefai:
+    driver: bridge
