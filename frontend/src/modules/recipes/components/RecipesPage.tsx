@@ -8,6 +8,8 @@ import SearchBar from "./SearchBar";
 
 import { useProfile } from "../../profile/hooks/useProfile";
 import { profileService } from "../../profile/service/profileService";
+import CatLoader from "../../loading/components/Loading";
+import Header from "../../../header/components/header";
 
 interface RecipesPageProps {
     onStartCooking: (recipe: Recipe) => void;
@@ -70,7 +72,7 @@ const RecipesPage: React.FC<RecipesPageProps> = ({ onStartCooking, onNavigate })
     if (loading) {
         return (
             <div style={styles.container}>
-                <p>Loading your personalized kitchen...</p>
+                <CatLoader />
             </div>
         );
     }
@@ -89,8 +91,9 @@ const RecipesPage: React.FC<RecipesPageProps> = ({ onStartCooking, onNavigate })
 
     return (
         <div style={styles.container}>
+            <Header />
             <div style={styles.header}>
-                <h1 style={styles.title}>🍳 Recipes</h1>
+
                 <SearchBar
                     diet={profile?.diet_type}
                     onSelectRecipe={(recipe) => setSelectedRecipe(recipe)}
@@ -160,6 +163,7 @@ const styles: Record<string, React.CSSProperties> = {
         display: "flex",
         alignItems: "center",
         gap: "20px",
+        marginTop: "32px",
         marginBottom: "32px",
         padding: "0 10px",
         width: "100%",

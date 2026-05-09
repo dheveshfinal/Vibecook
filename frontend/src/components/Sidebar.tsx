@@ -67,7 +67,7 @@ export default function Sidebar({ activePage, onNavigate }: SidebarProps) {
       <div style={styles.brand}>
         <div style={styles.brandIcon}>🍳</div>
         <div>
-          <div style={styles.brandName}>ChefAI</div>
+          <div style={styles.brandName}>VibeCook</div>
           <div style={styles.brandSub}>Cooking Assistant</div>
         </div>
       </div>

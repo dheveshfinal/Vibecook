@@ -1,4 +1,4 @@
-# Vibecook - Full-Stack Recipe & AI Assistant Application
+# ChefAI - Full-Stack Recipe & AI Assistant Application
 
 A complete full-stack application featuring recipe management, image uploads, and an AI-powered chat assistant with Retrieval-Augmented Generation (RAG) capabilities.
 

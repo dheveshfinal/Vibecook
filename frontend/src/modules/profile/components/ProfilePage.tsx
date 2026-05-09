@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import { useProfile } from "../hooks/useProfile";
 import { profileService } from "../service/profileService";
+import CatLoader from "../../loading/components/Loading";
 
 const COLORS = {
     primary: "hsl(20, 85%, 56%)",
@@ -42,7 +43,7 @@ const ProfilePage: React.FC = () => {
     const recipeImgRef = useRef<HTMLInputElement>(null);
     const docInputRef = useRef<HTMLInputElement>(null);
 
-    if (loading && !profile) return <div>Loading...</div>;
+    if (loading && !profile) return <CatLoader />;
     if (!profile) return <div>Error loading profile.</div>;
 
     const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {

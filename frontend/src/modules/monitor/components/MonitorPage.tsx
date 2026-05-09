@@ -1,5 +1,6 @@
 import React from "react";
 import { useMonitor } from "../hooks/useMonitor";
+import CatLoader from "../../loading/components/Loading";
 
 const MonitorPage: React.FC = () => {
     const { logs, loading, error } = useMonitor(50);
@@ -15,7 +16,7 @@ const MonitorPage: React.FC = () => {
 
             <div style={styles.logContainer}>
                 {loading && logs.length === 0 ? (
-                    <p>Loading logs...</p>
+                    <CatLoader />
                 ) : logs.length === 0 ? (
                     <p>No logs found. Start a document processing task to see logs.</p>
                 ) : (

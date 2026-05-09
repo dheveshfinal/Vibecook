@@ -4,6 +4,8 @@ import RecipeCard from "./RecipeCard";
 import RecipeDetailView from "./RecipeDetailView";
 import type { Recipe } from "../types";
 import { recipeService } from "../service/recipeService";
+import CatLoader from "../../loading/components/Loading";
+import Header from "../../../header/components/header";
 
 interface ExplorerPageProps {
     onStartCooking: (recipe: Recipe) => void;
@@ -63,6 +65,7 @@ const ExplorerPage: React.FC<ExplorerPageProps> = ({ onStartCooking }) => {
 
     return (
         <div style={styles.container}>
+            <Header />
             <div style={styles.hero}>
                 <h1 style={styles.heroTitle}>Explore Flavors</h1>
                 <p style={styles.heroSub}>Discover new tastes from around the world</p>
@@ -81,7 +84,7 @@ const ExplorerPage: React.FC<ExplorerPageProps> = ({ onStartCooking }) => {
 
             <div style={styles.content}>
                 {loading && recipes.length === 0 ? (
-                    <div style={styles.loading}>Searching for deliciousness...</div>
+                    <CatLoader />
                 ) : recipes.length === 0 ? (
                     <div style={styles.empty}>
                         <div style={{ fontSize: 48, marginBottom: 16 }}>🍽️</div>
@@ -126,7 +129,7 @@ const styles: Record<string, React.CSSProperties> = {
     },
     hero: {
         padding: "60px 40px",
-        background: "linear-gradient(135deg, #e8500a 0%, #f97316 50%, #fb923c 100%)", // ← FIXED: warm orange
+        background: "linear-gradient(135deg, #dbc5bbff 0%, #f97316 50%, #fb923c 100%)", // ← FIXED: warm orange
         color: "white",
         display: "flex",
         flexDirection: "column",
