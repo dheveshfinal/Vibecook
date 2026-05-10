@@ -48,8 +48,21 @@ app.include_router(chat_router, prefix="/api/v1/chat", tags=["chat"])
 # ── DB pool ─────────────────────────────────────────────────────────────────
 @app.on_event("startup")
 async def startup():
-    app.state.pool = await asyncpg.create_pool(DATABASE_URL, min_size=2, max_size=10)
-    await init_db(app.state.pool)
+    try:
+        app.state.pool = await asyncpg.create_pool(DATABASE_URL, min_size=2, max_size=10)
+        async with app.state.pool.acquire() as conn:
+            await init_db(app.state.pool)
+            # Heartbeat log to verify monitor is working
+            from services.monitor_service import MonitorService
+            await MonitorService.log_event(
+                module="system", 
+                message="Backend services initialized and database connected.", 
+                level="INFO"
+            )
+            print("--- Database Connected and Startup Logged ---")
+    except Exception as e:
+        print(f"FAILED TO STARTUP DATABASE POOL: {e}")
+        raise e
 
 @app.on_event("shutdown")
 async def shutdown():

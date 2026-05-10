@@ -6,6 +6,8 @@ import type { Recipe } from "../types";
 import { recipeService } from "../service/recipeService";
 import CatLoader from "../../loading/components/Loading";
 import Header from "../../../header/components/header";
+import ConfirmDialog from "../../../components/ConfirmDialog";
+
 
 interface ExplorerPageProps {
     onStartCooking: (recipe: Recipe) => void;
@@ -22,6 +24,8 @@ const ExplorerPage: React.FC<ExplorerPageProps> = ({ onStartCooking }) => {
 
     const { recipes, loading, deleteRecipe, refresh } = useRecipes(undefined, undefined, debouncedQuery);
     const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+    const [recipeToDelete, setRecipeToDelete] = useState<string | null>(null);
+
 
     const groupedRecipes = useMemo(() => {
         const groups: Record<string, Recipe[]> = {};
@@ -34,9 +38,16 @@ const ExplorerPage: React.FC<ExplorerPageProps> = ({ onStartCooking }) => {
     }, [recipes]);
 
     const handleDelete = async (db_id: string) => {
-        if (!window.confirm("Are you sure you want to delete this recipe?")) return;
-        await deleteRecipe(db_id);
         setSelectedRecipe(null);
+        setRecipeToDelete(db_id);
+    };
+
+    const confirmDelete = async () => {
+        if (recipeToDelete) {
+            await deleteRecipe(recipeToDelete);
+            setRecipeToDelete(null);
+            setSelectedRecipe(null);
+        }
     };
 
     const handleRefresh = async () => {
@@ -113,6 +124,12 @@ const ExplorerPage: React.FC<ExplorerPageProps> = ({ onStartCooking }) => {
                     ))
                 )}
             </div>
+
+            <ConfirmDialog
+                isOpen={!!recipeToDelete}
+                onConfirm={confirmDelete}
+                onCancel={() => setRecipeToDelete(null)}
+            />
         </div>
     );
 };

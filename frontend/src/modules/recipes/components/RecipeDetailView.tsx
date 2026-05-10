@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import type { Recipe } from "../types";
 import { RecipeChat } from "../../chat/components/recipeChat";
 
+
 interface RecipeDetailViewProps {
     recipe: Recipe;
     onBack: () => void;
@@ -13,6 +14,7 @@ interface RecipeDetailViewProps {
 const RecipeDetailView: React.FC<RecipeDetailViewProps> = ({ recipe, onBack, onDelete, onRefresh, onStartCooking }) => {
     const [imgPos, setImgPos] = useState({ x: 50, y: 50 });
     const [isHoveringImg, setIsHoveringImg] = useState(false);
+
 
     const ingredients = Array.isArray(recipe.ingredients)
         ? recipe.ingredients
@@ -94,6 +96,7 @@ const RecipeDetailView: React.FC<RecipeDetailViewProps> = ({ recipe, onBack, onD
                             title="Delete"
                             onClick={() => onDelete(recipe.db_id!)}
                         >🗑</button>
+
                     </div>
                 </div>
 
@@ -174,6 +177,7 @@ const RecipeDetailView: React.FC<RecipeDetailViewProps> = ({ recipe, onBack, onD
                 recipeTitle={recipe.title || "Recipe"}
             />
         </div>
+
     );
 };
 

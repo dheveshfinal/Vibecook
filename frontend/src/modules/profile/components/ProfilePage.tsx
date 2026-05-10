@@ -2,7 +2,6 @@ import React, { useState, useRef } from "react";
 import { useProfile } from "../hooks/useProfile";
 import { profileService } from "../service/profileService";
 import CatLoader from "../../loading/components/Loading";
-
 const COLORS = {
     primary: "hsl(20, 85%, 56%)",
     primaryDark: "hsl(20, 85%, 45%)",
@@ -23,7 +22,7 @@ const dietColors: Record<string, { bg: string; color: string }> = {
 };
 
 const ProfilePage: React.FC = () => {
-    const { profile, loading, error, updateProfile, uploadAvatar } = useProfile();
+    const { profile, loading, updateProfile, uploadAvatar } = useProfile();
     const [editMode, setEditMode] = useState(false);
     const [saving, setSaving] = useState(false);
     const [saveMsg, setSaveMsg] = useState("");

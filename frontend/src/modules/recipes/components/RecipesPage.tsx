@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import { useRecipes } from "../hooks/useRecipes";
 import RecipeCard from "./RecipeCard";
 import RecipeDetailView from "./RecipeDetailView";
@@ -7,42 +7,22 @@ import { recipeService } from "../service/recipeService";
 import SearchBar from "./SearchBar";
 
 import { useProfile } from "../../profile/hooks/useProfile";
-import { profileService } from "../../profile/service/profileService";
 import CatLoader from "../../loading/components/Loading";
 import Header from "../../../header/components/header";
+import ConfirmDialog from "../../../components/ConfirmDialog";
+
 
 interface RecipesPageProps {
     onStartCooking: (recipe: Recipe) => void;
-    onNavigate?: (page: string) => void;
 }
 
-const RecipesPage: React.FC<RecipesPageProps> = ({ onStartCooking, onNavigate }) => {
+const RecipesPage: React.FC<RecipesPageProps> = ({ onStartCooking }) => {
     const { profile, loading: profileLoading } = useProfile();
     const { recipes, loading: recipesLoading, deleteRecipe, refresh } = useRecipes(profile?.diet_type, undefined, undefined, !profileLoading);
     const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
-    const [isUploading, setIsUploading] = useState(false);
-    const [uploadSuccess, setUploadSuccess] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [recipeToDelete, setRecipeToDelete] = useState<string | null>(null);
 
-    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
 
-        setIsUploading(true);
-        try {
-            // Use filename as title, empty image info, tag as KnowledgeBase
-            await profileService.uploadRecipe(file.name, "", undefined, file, "KnowledgeBase");
-            setUploadSuccess(true);
-            setTimeout(() => setUploadSuccess(false), 10000); // Hide after 10s
-            refresh();
-        } catch (error) {
-            console.error("Upload failed:", error);
-            alert("Failed to upload document.");
-        } finally {
-            setIsUploading(false);
-            if (fileInputRef.current) fileInputRef.current.value = "";
-        }
-    };
 
     // If profile is loading, or we are waiting for the FIRST fetch of recipes WITH a diet filter
     const loading = profileLoading || (recipesLoading && recipes.length === 0);
@@ -52,9 +32,16 @@ const RecipesPage: React.FC<RecipesPageProps> = ({ onStartCooking, onNavigate })
     };
 
     const handleDelete = async (db_id: string) => {
-        if (!window.confirm("Are you sure you want to delete this recipe?")) return;
-        await deleteRecipe(db_id);
         setSelectedRecipe(null);
+        setRecipeToDelete(db_id);
+    };
+
+    const confirmDelete = async () => {
+        if (recipeToDelete) {
+            await deleteRecipe(recipeToDelete);
+            setRecipeToDelete(null);
+            setSelectedRecipe(null);
+        }
     };
 
     const handleRefresh = async () => {
@@ -99,37 +86,6 @@ const RecipesPage: React.FC<RecipesPageProps> = ({ onStartCooking, onNavigate })
                     onSelectRecipe={(recipe) => setSelectedRecipe(recipe)}
                 />
 
-                <div style={styles.headerActions}>
-                    <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleFileUpload}
-                        style={{ display: "none" }}
-                        accept=".pdf,.doc,.docx,.txt"
-                    />
-                    <button
-                        style={{
-                            ...styles.uploadButton,
-                            opacity: isUploading ? 0.7 : 1,
-                            cursor: isUploading ? "not-allowed" : "pointer"
-                        }}
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={isUploading}
-                    >
-                        {isUploading ? "Uploading..." : "📎 Project Doc"}
-                    </button>
-                    {uploadSuccess && (
-                        <div style={styles.successMessage}>
-                            Processed!
-                            <button
-                                onClick={() => onNavigate?.("monitor")}
-                                style={styles.monitorLink}
-                            >
-                                View Logs 📊
-                            </button>
-                        </div>
-                    )}
-                </div>
             </div>
 
 
@@ -144,6 +100,12 @@ const RecipesPage: React.FC<RecipesPageProps> = ({ onStartCooking, onNavigate })
                     ))
                 )}
             </div>
+
+            <ConfirmDialog
+                isOpen={!!recipeToDelete}
+                onConfirm={confirmDelete}
+                onCancel={() => setRecipeToDelete(null)}
+            />
         </div>
     );
 };
@@ -167,43 +129,6 @@ const styles: Record<string, React.CSSProperties> = {
         marginBottom: "32px",
         padding: "0 10px",
         width: "100%",
-    },
-    headerActions: {
-        marginLeft: "auto",
-        display: "flex",
-        alignItems: "center",
-    },
-    uploadButton: {
-        background: "linear-gradient(135deg, #FF6B35 0%, #FF8C42 100%)",
-        color: "white",
-        border: "none",
-        padding: "10px 20px",
-        borderRadius: "12px",
-        fontWeight: "600",
-        fontSize: "14px",
-        boxShadow: "0 4px 15px rgba(255, 107, 53, 0.2)",
-        transition: "all 0.2s ease",
-        whiteSpace: "nowrap",
-    },
-    successMessage: {
-        marginLeft: "12px",
-        fontSize: "13px",
-        color: "#2e7d32",
-        fontWeight: "600",
-        display: "flex",
-        alignItems: "center",
-        gap: "8px",
-        animation: "slideIn 0.3s ease",
-    },
-    monitorLink: {
-        background: "none",
-        border: "none",
-        color: "#1976d2",
-        textDecoration: "underline",
-        cursor: "pointer",
-        padding: 0,
-        fontSize: "13px",
-        fontWeight: "70a0",
     },
     title: {
         fontSize: 32,

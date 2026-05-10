@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import type { Recipe } from "../types";
 import { recipeService } from "../service/recipeService";
+import "./SearchBar.css";
 
 interface SearchBarProps {
     onSelectRecipe: (recipe: Recipe) => void;
@@ -53,45 +54,92 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSelectRecipe, diet }) => {
     };
 
     return (
-        <div ref={ref} style={styles.wrapper}>
-            <div style={styles.inputWrapper}>
-                <span style={styles.icon}>🔍</span>
+        <div ref={ref} className="sb-wrapper">
+            <div className="sb-container">
+                <svg
+                    className="sb-svg"
+                    viewBox="0 0 420 60"
+                    xmlns="http://www.w3.org/2000/svg"
+                >
+                    {/* Pill bar — explicit x/y/width/height so stroke is visible */}
+                    <rect className="bar" x="5" y="5" width="410" height="50" />
+
+                    <g className="magnifier">
+                        <circle className="glass" />
+                        <line className="handle" x1="32" y1="32" x2="44" y2="44" />
+                    </g>
+
+                    <g className="sparks">
+                        <circle className="spark" />
+                        <circle className="spark" />
+                        <circle className="spark" />
+                    </g>
+
+                    <g className="burst">
+                        <circle className="particle circle" />
+                        <path className="particle triangle" />
+                        <circle className="particle circle" />
+                        <path className="particle plus" />
+                        <rect className="particle rect" />
+                        <path className="particle triangle" />
+                    </g>
+                    <g className="burst">
+                        <path className="particle plus" />
+                        <circle className="particle circle" />
+                        <path className="particle triangle" />
+                        <rect className="particle rect" />
+                        <circle className="particle circle" />
+                        <path className="particle plus" />
+                    </g>
+                    <g className="burst">
+                        <circle className="particle circle" />
+                        <rect className="particle rect" />
+                        <path className="particle plus" />
+                        <path className="particle triangle" />
+                        <rect className="particle rect" />
+                        <path className="particle plus" />
+                    </g>
+                </svg>
+
                 <input
-                    style={styles.input}
-                    type="text"
+                    className="sb-input"
+                    type="search"
+                    name="q"
                     placeholder="Search recipes, cuisines, diets..."
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     onFocus={() => query && setIsOpen(true)}
+                    aria-label="Search recipes"
                 />
+
                 {query && (
-                    <button style={styles.clear} onClick={() => setQuery("")}>✕</button>
+                    <button className="sb-clear" onClick={() => setQuery("")}>✕</button>
                 )}
             </div>
 
             {isOpen && (
-                <div style={styles.dropdown}>
+                <div className="sb-dropdown">
                     {results.length === 0 ? (
-                        <div style={styles.noResults}>No recipes found</div>
+                        <div className="sb-no-results">No recipes found</div>
                     ) : (
                         results.map((recipe) => (
                             <div
                                 key={recipe.db_id}
-                                style={styles.item}
+                                className="sb-item"
                                 onMouseDown={() => handleSelect(recipe)}
                             >
                                 <img
                                     src={recipe.img}
                                     alt={recipe.title}
-                                    style={styles.thumb}
+                                    className="sb-thumb"
                                     onError={(e) =>
                                     ((e.target as HTMLImageElement).src =
                                         "https://via.placeholder.com/40")
                                     }
                                 />
-                                <div style={styles.itemInfo}>
-                                    <div style={styles.itemTitle}>{recipe.title}</div>
-                                    <div style={styles.itemMeta}>
+                                <div className="sb-item-info">
+                                    <div className="sb-item-title">{recipe.title}</div>
+                                    <div className="sb-item-meta">
                                         {recipe.cuisine} · {recipe.diet} · {recipe.time}
                                     </div>
                                 </div>
@@ -102,91 +150,6 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSelectRecipe, diet }) => {
             )}
         </div>
     );
-};
-
-const styles: Record<string, React.CSSProperties> = {
-    wrapper: {
-        position: "relative",
-        width: "100%",
-        maxWidth: 480,
-    },
-    inputWrapper: {
-        display: "flex",
-        alignItems: "center",
-        backgroundColor: "white",
-        borderRadius: 12,
-        padding: "8px 14px",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-        gap: 8,
-    },
-    icon: {
-        fontSize: 16,
-        color: "#888",
-    },
-    input: {
-        flex: 1,
-        border: "none",
-        outline: "none",
-        fontSize: 14,
-        color: "#1a1a1a",
-        background: "transparent",
-    },
-    clear: {
-        background: "none",
-        border: "none",
-        cursor: "pointer",
-        fontSize: 13,
-        color: "#aaa",
-        padding: 0,
-    },
-    dropdown: {
-        position: "absolute",
-        top: "calc(100% + 6px)",
-        left: 0,
-        right: 0,
-        backgroundColor: "white",
-        borderRadius: 12,
-        boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
-        zIndex: 100,
-        maxHeight: 320,
-        overflowY: "auto",
-    },
-    noResults: {
-        padding: "16px",
-        textAlign: "center",
-        color: "#888",
-        fontSize: 14,
-    },
-    item: {
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        padding: "10px 14px",
-        cursor: "pointer",
-        borderBottom: "1px solid #f0e8e0",
-        transition: "background 0.15s",
-    },
-    thumb: {
-        width: 40,
-        height: 40,
-        borderRadius: 8,
-        objectFit: "cover",
-        flexShrink: 0,
-    },
-    itemInfo: {
-        display: "flex",
-        flexDirection: "column",
-        gap: 2,
-    },
-    itemTitle: {
-        fontSize: 14,
-        fontWeight: 600,
-        color: "#1a1a1a",
-    },
-    itemMeta: {
-        fontSize: 12,
-        color: "#888",
-    },
 };
 
 export default SearchBar;
