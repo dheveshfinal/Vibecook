@@ -1,0 +1,52 @@
+# VibeCook Performance Optimization Log
+
+## 1. Recipe Extraction Logic
+**Before:**
+- Used a heavy LLM call to parse ingredients and instructions from uploaded documents/images.
+- Results took 30-60 seconds depending on server load and document length.
+- Frequent timeouts and partial data loss on complex layouts.
+
+**After:**
+- Implemented a rule-based parsing engine with sentence-level buffering.
+- Extraction is now near-instant (milliseconds).
+- Robust handling of section-aware layouts (e.g., "Batter", "Baking", "Frosting").
+
+## 2. Backend Architecture (RAG Pipeline)
+**Before:**
+- Synchronous Python implementation.
+- The thread was blocked during document chunking, embedding generation, and Qdrant database upserts.
+- The UI would freeze or show a "Request Timeout" during document processing.
+
+**After:**
+- Migrated to a fully asynchronous architecture using `httpx`.
+- Implemented non-blocking API calls.
+- Improved concurrency, allowing the system to handle multiple requests without slowing down.
+
+## 3. Background Task Execution
+**Before:**
+- Heavy document processing (chunking, embedding, indexing) was performed on-the-fly during the HTTP request.
+- The API response was delayed until all processing steps were finished.
+
+**After:**
+- Integrated Celery workers and Redis as a message broker.
+- Large tasks are offloaded to background workers instantly.
+- Added WebSocket support for real-time progress updates so the user knows exactly when the processing finishes.
+
+## 4. Vector Database Integration
+**Before:**
+- Occasional dimension mismatches between embedding models and Qdrant collections.
+- Manual schema synchronization required.
+
+**After:**
+- Standardized the embedding pipeline using optimized local Ollama models (`llama3.2`).
+- Auto-validation of vector dimensions before indexing.
+
+## 5. UI/UX Responsiveness
+**Before:**
+- Blank pages or static loaders during long operations.
+- Overlays obstructed view during AI assistant interaction.
+
+**After:**
+- Refactored Chat and Cooking Assistant UI to be non-obstructive.
+- Increased frontend request timeouts.
+- Real-time status indicators (WebSockets) for processing tasks.

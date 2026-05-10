@@ -65,11 +65,7 @@ export default function Sidebar({ activePage, onNavigate }: SidebarProps) {
     <aside style={styles.sidebar}>
       {/* Brand */}
       <div style={styles.brand}>
-        <div style={styles.brandIcon}>🍳</div>
-        <div>
-          <div style={styles.brandName}>VibeCook</div>
-          <div style={styles.brandSub}>Cooking Assistant</div>
-        </div>
+        <img src="/logo.png" alt="VibeCook Logo" style={styles.brandLogo} />
       </div>
 
       <div style={styles.divider} />
@@ -136,19 +132,13 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "8px 12px",
     marginBottom: 16,
   },
-  brandIcon: {
-    width: 48,
-    height: 48,
-    background: ORANGE,
-    borderRadius: 14,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: 22,
-    flexShrink: 0,
+  brandLogo: {
+    width: "100%",
+    maxWidth: 200,
+    height: "auto",
+    objectFit: "contain",
+    mixBlendMode: "multiply", // removes white background
   },
-  brandName: { fontSize: 18, fontWeight: 700, color: "#1a1a1a" },
-  brandSub: { fontSize: 13, color: "#888" },
   divider: { height: 1, background: "#f0e8e0", margin: "8px 0" },
   navItem: {
     display: "flex",
