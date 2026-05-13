@@ -2,6 +2,10 @@ import React, { useState, useRef } from "react";
 import { useProfile } from "../hooks/useProfile";
 import { profileService } from "../service/profileService";
 import CatLoader from "../../loading/components/Loading";
+import UserInfoPanel from "../components/Userinfopanel";
+import SavedRecipesPanel from "../components/Savedrecipespanel";
+import { authService } from "../../Auth/service/authService";
+
 const COLORS = {
     primary: "hsl(20, 85%, 56%)",
     primaryDark: "hsl(20, 85%, 45%)",
@@ -23,6 +27,7 @@ const dietColors: Record<string, { bg: string; color: string }> = {
 
 const ProfilePage: React.FC = () => {
     const { profile, loading, updateProfile, uploadAvatar } = useProfile();
+    const role = authService.getUserRole();
     const [editMode, setEditMode] = useState(false);
     const [saving, setSaving] = useState(false);
     const [saveMsg, setSaveMsg] = useState("");
@@ -149,121 +154,173 @@ const ProfilePage: React.FC = () => {
             </div>
 
             <div style={styles.body}>
-                {/* Profile Card */}
-                <div style={styles.fullWidthCard}>
-                    <div style={styles.card}>
-                        <div style={styles.cardHeader}>
-                            <div style={styles.cardTitle}>User Identity & Prefs</div>
-                            <div style={{ display: "flex", gap: "12px" }}>
-                                <input
-                                    type="file"
-                                    ref={docInputRef}
-                                    style={{ display: "none" }}
-                                    onChange={async (e) => {
-                                        const file = e.target.files?.[0];
-                                        if (!file) return;
-                                        setSubmitting(true);
-                                        try {
-                                            await profileService.uploadRecipe(file.name, "", undefined, file, "KnowledgeBase");
-                                            alert("Project document uploaded! Processing has started in the background.");
-                                        } catch (err) {
-                                            console.error(err);
-                                            alert("Upload failed.");
-                                        } finally {
-                                            setSubmitting(false);
-                                            if (docInputRef.current) docInputRef.current.value = "";
-                                        }
-                                    }}
-                                />
-                                <button
-                                    style={{ ...styles.docBtn, background: "#f0f7ff", borderColor: "#cce3ff" }}
-                                    onClick={() => docInputRef.current?.click()}
-                                    disabled={submitting}
-                                >
-                                    {submitting ? "Uploading..." : "📎 Project Doc"}
-                                </button>
-                                <button style={editMode ? styles.saveBtn : styles.editBtn} onClick={editMode ? handleSaveProfile : () => setEditMode(true)}>
-                                    {editMode ? (saving ? "Saving..." : "Save") : "Edit"}
-                                </button>
-                            </div>
-                        </div>
-                        {saveMsg && <div style={styles.saveMsg}>{saveMsg}</div>}
+                <div style={{ display: "flex", gap: "24px", alignItems: "stretch" }}>
+                    {/* ── NEW: User Information Panel (Left) ── */}
+                    <div style={{ flex: 1 }}>
+                        <UserInfoPanel />
+                    </div>
 
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
-                            <div>
-                                <div style={styles.formGroup}>
-                                    <div style={styles.prefRow}><div style={styles.prefLabel}>Spice Tolerance</div><div>{profile.spice_level}%</div></div>
-                                    <input type="range" min={0} max={100} value={profile.spice_level} disabled={!editMode}
-                                        onChange={(e) => updateProfile({ ...profile, spice_level: Number(e.target.value) })} style={styles.slider} />
+                    {/* ── Existing: Profile Card (Right) ── */}
+                    <div style={{ flex: 1.2 }}>
+                        <div style={styles.card}>
+                            <div style={styles.cardHeader}>
+                                <div style={styles.cardTitle}>User Identity & Prefs</div>
+                                <div style={{ display: "flex", gap: "12px" }}>
+                                    {role === 'admin' && (
+                                        <>
+                                            <input
+                                                type="file"
+                                                ref={docInputRef}
+                                                style={{ display: "none" }}
+                                                onChange={async (e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (!file) return;
+                                                    setSubmitting(true);
+                                                    try {
+                                                        await profileService.uploadRecipe(file.name, "", undefined, file, "KnowledgeBase");
+                                                        alert("Project document uploaded! Processing has started in the background.");
+                                                    } catch (err) {
+                                                        console.error(err);
+                                                        alert("Upload failed.");
+                                                    } finally {
+                                                        setSubmitting(false);
+                                                        if (docInputRef.current) docInputRef.current.value = "";
+                                                    }
+                                                }}
+                                            />
+                                            <button
+                                                style={{ ...styles.docBtn, background: "#f0f7ff", borderColor: "#cce3ff" }}
+                                                onClick={() => docInputRef.current?.click()}
+                                                disabled={submitting}
+                                            >
+                                                {submitting ? "Uploading..." : "📎 Project Doc"}
+                                            </button>
+                                        </>
+                                    )}
+                                    <button style={editMode ? styles.saveBtn : styles.editBtn} onClick={editMode ? handleSaveProfile : () => setEditMode(true)}>
+                                        {editMode ? (saving ? "Saving..." : "Save") : "Edit"}
+                                    </button>
                                 </div>
+                            </div>
+                            {saveMsg && <div style={styles.saveMsg}>{saveMsg}</div>}
+
+                            <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
                                 <div style={styles.formGroup}>
-                                    <div style={styles.prefRow}><div style={styles.prefLabel}>Dietary Preference</div>
-                                        {editMode ? <select style={styles.select} value={profile.diet_type} onChange={e => updateProfile({ ...profile, diet_type: e.target.value as any })}><option>Veg</option><option>Non-Veg</option><option>Vegan</option></select> :
-                                            <span style={{ ...styles.badge, background: diet.bg, color: diet.color }}>{profile.diet_type}</span>}
+                                    <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
+                                        <div style={styles.prefLabel}>Bio</div>
+                                        {editMode ? (
+                                            <textarea
+                                                style={{ ...styles.textarea, flex: 1, margin: 0 }}
+                                                rows={1}
+                                                value={profile.bio}
+                                                onChange={e => updateProfile({ ...profile, bio: e.target.value })}
+                                            />
+                                        ) : (
+                                            <p style={{ ...styles.bioText, margin: 0 }}>{profile.bio}</p>
+                                        )}
                                     </div>
                                 </div>
-                            </div>
-                            <div>
+
                                 <div style={styles.formGroup}>
-                                    <div style={styles.prefLabel}>Bio</div>
-                                    {editMode ? <textarea style={styles.textarea} rows={3} value={profile.bio} onChange={e => updateProfile({ ...profile, bio: e.target.value })} /> :
-                                        <p style={styles.bioText}>{profile.bio}</p>}
+                                    <div style={styles.prefRow}>
+                                        <div style={styles.prefLabel}>Dietary Preference</div>
+                                        {editMode ? (
+                                            <select
+                                                style={styles.select}
+                                                value={profile.diet_type}
+                                                onChange={e => updateProfile({ ...profile, diet_type: e.target.value as any })}
+                                            >
+                                                <option>Veg</option>
+                                                <option>Non-Veg</option>
+                                                <option>Vegan</option>
+                                            </select>
+                                        ) : (
+                                            <span style={{ ...styles.badge, background: diet.bg, color: diet.color }}>{profile.diet_type}</span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div style={styles.formGroup}>
+                                    <div style={styles.prefRow}>
+                                        <div style={styles.prefLabel}>Cuisine Preference</div>
+                                        {editMode ? (
+                                            <input
+                                                style={{ ...styles.adminInput, flex: 1, marginLeft: "12px", padding: "8px 12px" }}
+                                                value={profile.cuisine_prefs.join(", ")}
+                                                onChange={e => updateProfile({ ...profile, cuisine_prefs: e.target.value.split(",").map(c => c.trim()).filter(c => c !== "") })}
+                                                placeholder="e.g. Italian, Indian, Japanese"
+                                            />
+                                        ) : (
+                                            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end", flex: 1 }}>
+                                                {profile.cuisine_prefs.length > 0 ? profile.cuisine_prefs.map((c, i) => (
+                                                    <span key={i} style={{ ...styles.badge, background: "#f0f4f8", color: "#2d3748", border: "1px solid #e2e8f0" }}>{c}</span>
+                                                )) : <span style={{ color: "#999", fontSize: "14px" }}>None specified</span>}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Admin Feature */}
+                {/* ── NEW: Saved & Customized Recipes Panel ── */}
                 <div style={styles.fullWidthCard}>
-                    <div style={{ ...styles.card, border: `1.5px solid ${COLORS.primaryDark}`, background: "#fffcf9" }}>
-                        <div style={styles.cardTitle}>👨‍🍳 Admin: Combined Recipe & Document Entry</div>
-                        <p style={{ fontSize: 14, color: "#666", marginBottom: 24 }}>Create a complete recipe record with mandatory image and context document.</p>
-
-                        {errorMsg && <div style={styles.errorBanner}>{errorMsg}</div>}
-
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40 }}>
-                            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                                <div style={styles.inputLabel}>Recipe Information</div>
-                                <input style={styles.adminInput} placeholder="Enter recipe title..." value={recipeTitle} onChange={e => setRecipeTitle(e.target.value)} />
-
-                                <div style={styles.inputLabel}>Recipe Visual (Required)</div>
-                                <div style={styles.imageToggleRow}>
-                                    <div style={{ ...styles.toggleBtn, ...(recipeImgSource === "url" ? styles.toggleBtnActive : {}) }} onClick={() => setRecipeImgSource("url")}>Link URL</div>
-                                    <div style={{ ...styles.toggleBtn, ...(recipeImgSource === "upload" ? styles.toggleBtnActive : {}) }} onClick={() => setRecipeImgSource("upload")}>Manual File</div>
-                                </div>
-
-                                {recipeImgSource === "url" ? (
-                                    <input style={styles.adminInput} placeholder="https://example.com/food.jpg" value={recipeUrl} onChange={e => setRecipeUrl(e.target.value)} />
-                                ) : (
-                                    <div style={styles.fileBox}>
-                                        <input type="file" ref={recipeImgRef} style={{ display: "none" }} onChange={e => setRecipeFile(e.target.files?.[0] || null)} />
-                                        <button style={styles.docBtn} onClick={() => recipeImgRef.current?.click()}>
-                                            {recipeFile ? recipeFile.name : "+ Select Image"}
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                                <div style={styles.inputLabel}>Context Document (Required)</div>
-                                <div style={styles.aiBox}>
-                                    <p style={{ fontSize: 13, color: "#777", marginBottom: 12 }}>Upload nutrition facts or cooking manuals for AI processing.</p>
-                                    <div style={styles.fileBox}>
-                                        <input type="file" ref={docInputRef} style={{ display: "none" }} onChange={e => setDocFile(e.target.files?.[0] || null)} />
-                                        <button style={styles.docBtn} onClick={() => docInputRef.current?.click()}>
-                                            {docFile ? docFile.name : "+ Choose Document"}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <button style={{ ...styles.saveBtn, width: "100%", marginTop: 32, padding: "16px" }} onClick={handleSubmitRecipe} disabled={submitting}>
-                            {submitting ? "Processing Submission..." : "Create Recipe & Link Document"}
-                        </button>
-                    </div>
+                    <SavedRecipesPanel />
                 </div>
+
+                {/* ── Existing: Admin Feature ── */}
+                {role === 'admin' && (
+                    <div style={styles.fullWidthCard}>
+                        <div style={{ ...styles.card, border: `1.5px solid ${COLORS.primaryDark}`, background: "#fffcf9" }}>
+                            <div style={styles.cardTitle}>👨‍🍳 Admin: Combined Recipe & Document Entry</div>
+                            <p style={{ fontSize: 14, color: "#666", marginBottom: 24 }}>Create a complete recipe record with mandatory image and context document.</p>
+
+                            {errorMsg && <div style={styles.errorBanner}>{errorMsg}</div>}
+
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40 }}>
+                                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                                    <div style={styles.inputLabel}>Recipe Information</div>
+                                    <input style={styles.adminInput} placeholder="Enter recipe title..." value={recipeTitle} onChange={e => setRecipeTitle(e.target.value)} />
+
+                                    <div style={styles.inputLabel}>Recipe Visual (Required)</div>
+                                    <div style={styles.imageToggleRow}>
+                                        <div style={{ ...styles.toggleBtn, ...(recipeImgSource === "url" ? styles.toggleBtnActive : {}) }} onClick={() => setRecipeImgSource("url")}>Link URL</div>
+                                        <div style={{ ...styles.toggleBtn, ...(recipeImgSource === "upload" ? styles.toggleBtnActive : {}) }} onClick={() => setRecipeImgSource("upload")}>Manual File</div>
+                                    </div>
+
+                                    {recipeImgSource === "url" ? (
+                                        <input style={styles.adminInput} placeholder="https://example.com/food.jpg" value={recipeUrl} onChange={e => setRecipeUrl(e.target.value)} />
+                                    ) : (
+                                        <div style={styles.fileBox}>
+                                            <input type="file" ref={recipeImgRef} style={{ display: "none" }} onChange={e => setRecipeFile(e.target.files?.[0] || null)} />
+                                            <button style={styles.docBtn} onClick={() => recipeImgRef.current?.click()}>
+                                                {recipeFile ? recipeFile.name : "+ Select Image"}
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                                    <div style={styles.inputLabel}>Context Document (Required)</div>
+                                    <div style={styles.aiBox}>
+                                        <p style={{ fontSize: 13, color: "#777", marginBottom: 12 }}>Upload nutrition facts or cooking manuals for AI processing.</p>
+                                        <div style={styles.fileBox}>
+                                            <input type="file" ref={docInputRef} style={{ display: "none" }} onChange={e => setDocFile(e.target.files?.[0] || null)} />
+                                            <button style={styles.docBtn} onClick={() => docInputRef.current?.click()}>
+                                                {docFile ? docFile.name : "+ Choose Document"}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button style={{ ...styles.saveBtn, width: "100%", marginTop: 32, padding: "16px" }} onClick={handleSubmitRecipe} disabled={submitting}>
+                                {submitting ? "Processing Submission..." : "Create Recipe & Link Document"}
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </main>
     );

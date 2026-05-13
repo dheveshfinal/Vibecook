@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Query, Request, File, UploadFile
+from fastapi import APIRouter, HTTPException, Query, Request, File, UploadFile, Depends
 from typing import List, Optional
 from schemas.recipe_schema import Recipe, RecipeCreate, RecipeUpdate
 from services.recipe_service import RecipeService
@@ -7,6 +7,7 @@ import uuid
 import shutil
 from pathlib import Path
 from tasks.document_tasks import process_recipe_document
+from api.deps import get_current_user
 
 router = APIRouter()
 
@@ -69,19 +70,19 @@ async def upload_recipe_image(request: Request, recipe_id: str, file: UploadFile
 
     return {"path": rel_path}
 
-@router.get("/user/{user_id}/saved", response_model=List[Recipe])
-async def get_saved_recipes(request: Request, user_id: str):
+@router.get("/me/saved", response_model=List[Recipe])
+async def get_my_saved_recipes(request: Request, user_id: str = Depends(get_current_user)):
     pool = request.app.state.pool
     return await RecipeService.get_saved_recipes(pool, user_id)
 
-@router.post("/user/{user_id}/save/{recipe_id}")
-async def save_recipe(request: Request, user_id: str, recipe_id: str):
+@router.post("/me/save/{recipe_id}")
+async def save_recipe(request: Request, recipe_id: str, user_id: str = Depends(get_current_user)):
     pool = request.app.state.pool
     await RecipeService.save_recipe(pool, user_id, recipe_id)
     return {"message": "Recipe saved"}
 
-@router.delete("/user/{user_id}/unsave/{recipe_id}")
-async def unsave_recipe(request: Request, user_id: str, recipe_id: str):
+@router.delete("/me/unsave/{recipe_id}")
+async def unsave_recipe(request: Request, recipe_id: str, user_id: str = Depends(get_current_user)):
     pool = request.app.state.pool
     await RecipeService.unsave_recipe(pool, user_id, recipe_id)
     return {"message": "Recipe removed from saved"}

@@ -118,3 +118,7 @@ class RecipeService:
             await conn.execute("""
                 DELETE FROM saved_recipes WHERE user_id=$1::uuid AND recipe_id=$2::uuid
             """, user_id, recipe_id)
+            await conn.execute(
+                "UPDATE users SET recipes_saved = GREATEST(0, recipes_saved - 1) WHERE id=$1::uuid",
+                user_id
+            )

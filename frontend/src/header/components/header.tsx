@@ -126,9 +126,10 @@ export default function Header() {
                     </ul>
                 </nav> */}
 
-                <main>
+                <main className="header-slider">
                     {slides.map((slide) => (
                         <article
+                            className="header-slide"
                             key={slide.id}
                             id={`hero-${slide.id}`}
                             style={{ "--i": 6 - slide.id } as React.CSSProperties}
@@ -147,7 +148,7 @@ export default function Header() {
                 </main>
             </header>
 
-            <section ref={overlayRef} style={{ clipPath: "polygon(0% 0%, 100% 0%, 100% 0%, 0% 0%)" }}>
+            <section className="header-overlay" ref={overlayRef} style={{ clipPath: "polygon(0% 0%, 100% 0%, 100% 0%, 0% 0%)" }}>
                 <ul className="level-1">
                     <li>
                         <h3>Recipes</h3>

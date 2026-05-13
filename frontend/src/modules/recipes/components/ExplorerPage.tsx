@@ -146,7 +146,7 @@ const styles: Record<string, React.CSSProperties> = {
     },
     hero: {
         padding: "60px 40px",
-        background: "linear-gradient(135deg, #dbc5bbff 0%, #f97316 50%, #fb923c 100%)", // ← FIXED: warm orange
+        background: "linear-gradient(135deg, #dbc466ff 0%, #f1a671ff 50%, #fb923c 100%)", // ← FIXED: warm orange
         color: "white",
         display: "flex",
         flexDirection: "column",

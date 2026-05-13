@@ -10,7 +10,7 @@ services:
       - ./frontend:/app
       - /app/node_modules
     environment:
-      - VITE_API_URL=http://localhost:8000   # React uses this to call the backend
+      - VITE_API_URL=http://localhost:8000
     depends_on:
       - backend
     networks:
@@ -25,13 +25,14 @@ services:
       - ./backend:/app
       - ./uploads:/app/uploads
     environment:
-      # Database
       DATABASE_URL: postgresql://chef_user:chef_pass@postgres:5432/chefai
       BASE_URL: http://localhost:8000
-      # RAG Pipeline
       QDRANT_URL: http://qdrant:6333
       OLLAMA_URL: http://ollama:11434
       REDIS_URL: redis://redis:6379/0
+      # Supabase Connection
+      SUPABASE_URL: https://ekfsxuajgmrgyjklmhaj.supabase.co
+      SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrZnN4dWFqZ21yZ3lqa2xtaGFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2NzQ4OTQsImV4cCI6MjA5NDI1MDg5NH0.WwCeB5cL25hSSZwqYvsCg0iwdtlOUp76-4IioL8bWnI
     depends_on:
       postgres:
         condition: service_healthy
@@ -56,6 +57,9 @@ services:
       QDRANT_URL: http://qdrant:6333
       OLLAMA_URL: http://ollama:11434
       REDIS_URL: redis://redis:6379/0
+      # Supabase Connection
+      SUPABASE_URL: https://ekfsxuajgmrgyjklmhaj.supabase.co
+      SUPABASE_KEY: sb_secret_duN4vRXA91wSlxscvHsGAA_vgDVQ1qn
     depends_on:
       - redis
       - postgres
@@ -102,7 +106,7 @@ services:
     volumes:
       - qdrant_data:/qdrant/storage
     environment:
-      QDRANT_API_KEY: ""  # Set to empty for no auth (use strong key in production)
+      QDRANT_API_KEY: ""
     networks:
       - chefai
     restart: always
@@ -120,9 +124,6 @@ services:
     networks:
       - chefai
     restart: always
-    # Note: Pull required models on first startup
-    # docker exec ollama_llm ollama pull llama2
-    # docker exec ollama_llm ollama pull mistral
 
 volumes:
   postgres_data:

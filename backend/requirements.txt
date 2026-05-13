@@ -1,7 +1,9 @@
 fastapi
 uvicorn
 psycopg2-binary
-sqlalchemy
+passlib[bcrypt]
+bcrypt==4.0.1
+python-jose[cryptography]
 asyncpg
 python-multipart
 pydantic
@@ -20,3 +22,7 @@ numpy
 celery
 redis
 websockets
+supabase
+python-jose[cryptography]
+passlib[argon2]
+email-validator

@@ -9,6 +9,8 @@ interface SidebarProps {
   onNavigate: (page: string) => void;
 }
 
+import { authService } from "../modules/Auth/service/authService";
+
 const navItems: NavItem[] = [
   {
     label: "Home",
@@ -61,6 +63,12 @@ const navItems: NavItem[] = [
 ];
 
 export default function Sidebar({ activePage, onNavigate }: SidebarProps) {
+  const role = authService.getUserRole();
+  const filteredItems = navItems.filter(item => {
+    if (item.path === 'monitor') return role === 'admin';
+    return true;
+  });
+
   return (
     <aside style={styles.sidebar}>
       {/* Brand */}
@@ -71,7 +79,7 @@ export default function Sidebar({ activePage, onNavigate }: SidebarProps) {
       <div style={styles.divider} />
 
       {/* Nav items */}
-      {navItems.map((item) => (
+      {filteredItems.map((item) => (
         <div
           key={item.label}
           style={{

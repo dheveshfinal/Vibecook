@@ -10,31 +10,49 @@ interface UseChatOptions {
 
 export function useChat(options: UseChatOptions = {}) {
     const { recipeId, recipeTitle, initialMessage } = options;
-    const storageKey = `chat_history_${recipeId || "general"}`;
-
-    const [messages, setMessages] = useState<ChatMessage[]>(() => {
-        const saved = localStorage.getItem(storageKey);
-        if (saved) {
-            try {
-                // Parse and recover Date objects
-                return JSON.parse(saved).map((m: any) => ({
-                    ...m,
-                    timestamp: new Date(m.timestamp)
-                }));
-            } catch (e) {
-                console.error("Failed to load chat history", e);
-            }
-        }
-        return [];
-    });
-
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // Initial message & save to localStorage
+    // Fetch history from backend
     useEffect(() => {
-        if (messages.length === 0) {
+        const fetchHistory = async () => {
+            try {
+                setLoading(true);
+                const history = await chatService.getHistory();
+                if (history.length > 0) {
+                    // Fetch and interleave responses
+                    const interleaved: ChatMessage[] = [];
+                    history.forEach((h: any) => {
+                        interleaved.push({
+                            id: `${h.id}-user`,
+                            text: h.message,
+                            sender: "user",
+                            timestamp: new Date(h.created_at)
+                        });
+                        interleaved.push({
+                            id: `${h.id}-ai`,
+                            text: h.response,
+                            sender: "assistant",
+                            timestamp: new Date(h.created_at),
+                            sources: h.context ? JSON.parse(h.context).map((c: any) => c.metadata?.recipe_title).filter(Boolean) : []
+                        });
+                    });
+                    setMessages(interleaved);
+                }
+            } catch (err) {
+                console.error("Failed to fetch chat history", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchHistory();
+    }, []);
+
+    // Initial message if empty
+    useEffect(() => {
+        if (messages.length === 0 && !loading) {
             const initialText = recipeTitle
                 ? `👋 Hi! I'm your AI Assistant. Ask me anything about the **${recipeTitle}** context, relevant data, or project details.`
                 : "👋 Hi! I'm your AI Assistant. Ask me anything about projects, documentation, or relevant knowledge base information.";
@@ -52,14 +70,7 @@ export function useChat(options: UseChatOptions = {}) {
                 setTimeout(() => sendMessage(initialMessage), 500);
             }
         }
-    }, [recipeTitle, initialMessage, recipeId]);
-
-    // Persist messages whenever they change
-    useEffect(() => {
-        if (messages.length > 0) {
-            localStorage.setItem(storageKey, JSON.stringify(messages));
-        }
-    }, [messages, storageKey]);
+    }, [recipeTitle, initialMessage, recipeId, loading]);
 
     // Auto-scroll
     const scrollToBottom = useCallback(() => {
@@ -95,18 +106,18 @@ export function useChat(options: UseChatOptions = {}) {
         try {
             let fullText = "";
             const stream = chatService.streamMessage(text, recipeId, recipeTitle);
-            
+
             for await (const chunk of stream) {
                 if (chunk.type === "metadata") {
-                    setMessages(prev => prev.map(m => 
-                        m.id === assistantMsgId 
+                    setMessages(prev => prev.map(m =>
+                        m.id === assistantMsgId
                             ? { ...m, context: chunk.context, sources: chunk.sources }
                             : m
                     ));
                 } else if (chunk.type === "content") {
                     fullText += chunk.delta;
-                    setMessages(prev => prev.map(m => 
-                        m.id === assistantMsgId 
+                    setMessages(prev => prev.map(m =>
+                        m.id === assistantMsgId
                             ? { ...m, text: fullText }
                             : m
                     ));
@@ -117,8 +128,8 @@ export function useChat(options: UseChatOptions = {}) {
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "An error occurred";
             setError(errorMessage);
-            setMessages(prev => prev.map(m => 
-                m.id === assistantMsgId 
+            setMessages(prev => prev.map(m =>
+                m.id === assistantMsgId
                     ? { ...m, text: `Sorry, I encountered an error: ${errorMessage}` }
                     : m
             ));

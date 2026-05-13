@@ -1,4 +1,4 @@
-from .user import CREATE_USERS_TABLE, SEED_ADMIN_USER
+from .user import CREATE_USERS_TABLE
 from .recipe import CREATE_RECIPES_TABLE, CREATE_SAVED_RECIPES_TABLE
 from .chat import CREATE_CHAT_HISTORY_TABLE
 from .document import CREATE_DOCUMENTS_TABLE
@@ -6,7 +6,6 @@ from .monitor import CREATE_TASK_LOGS_TABLE
 
 __all__ = [
     "CREATE_USERS_TABLE",
-    "SEED_ADMIN_USER",
     "CREATE_RECIPES_TABLE",
     "CREATE_SAVED_RECIPES_TABLE",
     "CREATE_CHAT_HISTORY_TABLE",

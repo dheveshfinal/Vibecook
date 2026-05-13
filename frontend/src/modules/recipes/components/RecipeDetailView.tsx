@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import type { Recipe } from "../types";
 import { RecipeChat } from "../../chat/components/recipeChat";
+import { useProfile } from "../../profile/hooks/useProfile";
 
 
 interface RecipeDetailViewProps {
@@ -12,6 +13,7 @@ interface RecipeDetailViewProps {
 }
 
 const RecipeDetailView: React.FC<RecipeDetailViewProps> = ({ recipe, onBack, onDelete, onRefresh, onStartCooking }) => {
+    const { profile, toggleSaveRecipe } = useProfile();
     const [imgPos, setImgPos] = useState({ x: 50, y: 50 });
     const [isHoveringImg, setIsHoveringImg] = useState(false);
 
@@ -90,6 +92,17 @@ const RecipeDetailView: React.FC<RecipeDetailViewProps> = ({ recipe, onBack, onD
 
                     <button style={styles.backBtn} onClick={onBack}>←</button>
                     <div style={styles.topRight}>
+                        <button
+                            style={{
+                                ...styles.iconBtn,
+                                color: (profile?.recipes_saved_ids?.includes(recipe.db_id!) || false) ? "#FFD700" : "#999",
+                                fontSize: "20px"
+                            }}
+                            title={(profile?.recipes_saved_ids?.includes(recipe.db_id!) || false) ? "Unsave" : "Save"}
+                            onClick={() => toggleSaveRecipe(recipe.db_id!, (profile?.recipes_saved_ids?.includes(recipe.db_id!) || false))}
+                        >
+                            {(profile?.recipes_saved_ids?.includes(recipe.db_id!) || false) ? "★" : "☆"}
+                        </button>
                         <button style={styles.iconBtn} title="Refresh" onClick={onRefresh}>↻</button>
                         <button
                             style={{ ...styles.iconBtn, ...styles.deleteIconBtn }}

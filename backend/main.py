@@ -12,6 +12,7 @@ from api.v1.endpoints.monitor import router as monitor_router
 from api.v1.endpoints.recipes import router as recipes_router
 from api.v1.endpoints.profile import router as profile_router
 from api.v1.endpoints.chat import router as chat_router
+from api.v1.endpoints.auth import router as auth_router
 
 # Database Models
 from models import (
@@ -21,9 +22,9 @@ from models import (
     CREATE_CHAT_HISTORY_TABLE,
     CREATE_DOCUMENTS_TABLE,
     CREATE_TASK_LOGS_TABLE,
-    SEED_ADMIN_USER,
 )
 
+from services.auth_service import AuthService
 from core.config import DATABASE_URL, REDIS_URL, UPLOAD_DIR, DOCS_DIR
 
 app = FastAPI(title="ChefAI API")
@@ -44,6 +45,7 @@ app.include_router(monitor_router, prefix="/api/v1/monitor", tags=["monitor"])
 app.include_router(recipes_router, prefix="/api/v1/recipes", tags=["recipes"])
 app.include_router(profile_router, prefix="/api/v1/profile", tags=["profile"])
 app.include_router(chat_router, prefix="/api/v1/chat", tags=["chat"])
+app.include_router(auth_router, prefix="/api/v1/auth", tags=["auth"])
 
 # ── DB pool ─────────────────────────────────────────────────────────────────
 @app.on_event("startup")
@@ -52,6 +54,9 @@ async def startup():
         app.state.pool = await asyncpg.create_pool(DATABASE_URL, min_size=2, max_size=10)
         async with app.state.pool.acquire() as conn:
             await init_db(app.state.pool)
+            # Create default admin if not exists
+            await AuthService.create_default_admin(app.state.pool)
+            
             # Heartbeat log to verify monitor is working
             from services.monitor_service import MonitorService
             await MonitorService.log_event(
@@ -76,30 +81,6 @@ async def init_db(pool):
         await conn.execute(CREATE_CHAT_HISTORY_TABLE)
         await conn.execute(CREATE_DOCUMENTS_TABLE)
         await conn.execute(CREATE_TASK_LOGS_TABLE)
-
-        # Seed admin user if not exists
-        exists = await conn.fetchval("SELECT id FROM users LIMIT 1")
-        if not exists:
-            await conn.execute(SEED_ADMIN_USER,
-                "Arjun Mehta",
-                "Home cook obsessed with South Indian flavours and French technique.",
-                "Veg", 32,
-                ["Peanuts", "Shellfish"],
-                ["South Indian", "French", "Mediterranean", "Italian"],
-                "Intermediate", 124, 47
-            )
-
-            # Seed sample recipes
-            sample_recipes = [
-                ("Creamy Chocolate Mousse", "French", 30, "None", "Veg", "https://images.unsplash.com/photo-1511690743698-d9d85f2fbf38?w=400&q=80", "Cocoa powder, dark chocolate, cream", "1. Melt chocolate\n2. Whip cream\n3. Combine\n4. Chill", "A rich and creamy chocolate dessert"),
-                ("Herbed Corn Bowl", "American", 20, "Mild", "Veg", "https://images.unsplash.com/photo-1543352634-99a5d50ae78e?w=400&q=80", "Corn, herbs, lime, oil", "1. Cook corn\n2. Add herbs\n3. Squeeze lime", "Fresh and vibrant corn salad"),
-                ("Stuffed Grape Leaves", "Mediterranean", 45, "Medium", "Veg", "https://images.unsplash.com/photo-1574484284002-952d92456975?w=400&q=80", "Grape leaves, rice, spices", "1. Prepare leaves\n2. Fill with rice\n3. Roll\n4. Steam", "Traditional Mediterranean rolls"),
-            ]
-            for title, cuisine, time_mins, spice, diet, img_url, ingredients, steps, desc in sample_recipes:
-                await conn.execute("""
-                    INSERT INTO recipes (title, cuisine, time_mins, spice_level, diet_type, image_url, ingredients, steps, description)
-                    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-                """, title, cuisine, time_mins, spice, diet, img_url, ingredients, steps, desc)
 
 # ── Health ───────────────────────────────────────────────────────────────────
 @app.get("/api/health")

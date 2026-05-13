@@ -1,16 +1,19 @@
+import json
+import asyncpg
 from typing import List, Optional
 from schemas.chat_schema import ChatResponse
 from orchestration.rag_graph import rag_graph
-import json
 
 class ChatService:
     async def get_response(
         self, 
+        pool: asyncpg.Pool,
+        user_id: str,
         message: str,
         recipe_id: Optional[str] = None,
         recipe_title: Optional[str] = None
     ) -> ChatResponse:
-        """Get static AI response using LangGraph."""
+        """Get static AI response and save to history."""
         try:
             inputs = {
                 "query": message,
@@ -20,6 +23,16 @@ class ChatService:
             }
             # Run the graph
             result = await rag_graph.ainvoke(inputs)
+            
+            # Save to history
+            async with pool.acquire() as conn:
+                await conn.execute(
+                    """
+                    INSERT INTO chat_history (user_id, message, response, context)
+                    VALUES ($1::uuid, $2, $3, $4)
+                    """,
+                    user_id, message, result["response"], json.dumps(result["context"])
+                )
             
             return ChatResponse(
                 response=result["response"],
@@ -32,23 +45,22 @@ class ChatService:
 
     async def get_streaming_response(
         self, 
+        pool: asyncpg.Pool,
+        user_id: str,
         message: str,
         recipe_id: Optional[str] = None,
         recipe_title: Optional[str] = None
     ):
-        """Get streaming AI response using LangGraph context."""
+        """Get streaming AI response and save to history."""
         try:
-            # 1. First run the retrieval part of the graph (we could split the graph but for now we'll do it sequentially for context chunks)
             inputs = {
                 "query": message,
                 "recipe_id": recipe_id,
                 "recipe_title": recipe_title,
-                "stream": True # This tells the generate node to return a generator
+                "stream": True
             }
             
-            # For streaming, we manually call the nodes to yield metadata first
             from orchestration.rag_graph import retrieve_node, generate_node
-            
             state = await retrieve_node(inputs)
             
             yield json.dumps({
@@ -57,12 +69,32 @@ class ChatService:
                 "sources": state["sources"]
             }) + "\n"
             
-            # Now run generation
             res_state = await generate_node(state)
             generator = res_state["response"]
             
+            full_response = ""
             async for chunk in generator:
+                full_response += chunk
                 yield json.dumps({"type": "content", "delta": chunk}) + "\n"
+                
+            # Save to history after stream completes
+            async with pool.acquire() as conn:
+                await conn.execute(
+                    """
+                    INSERT INTO chat_history (user_id, message, response, context)
+                    VALUES ($1::uuid, $2, $3, $4)
+                    """,
+                    user_id, message, full_response, json.dumps(state["context"])
+                )
                 
         except Exception as e:
             yield json.dumps({"type": "error", "message": str(e)}) + "\n"
+
+    async def get_history(self, pool: asyncpg.Pool, user_id: str) -> List[dict]:
+        """Fetch chat history for a specific user."""
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT * FROM chat_history WHERE user_id=$1::uuid ORDER BY created_at ASC",
+                user_id
+            )
+            return [dict(r) for r in rows]

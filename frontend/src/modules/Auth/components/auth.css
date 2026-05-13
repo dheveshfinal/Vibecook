@@ -1,0 +1,559 @@
+/* ── Auth Page ── */
+
+* {
+    box-sizing: border-box;
+}
+
+.user-authentication {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100vw;
+    height: 100vh;
+    min-height: 100vh;
+    background: linear-gradient(135deg, rgba(232, 113, 109, 0.2), rgba(170, 59, 255, 0.1)),
+        url("https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=1920&q=80");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-color: #f9f1eb;
+    /* Fallback color */
+    font-family: "PT Sans", "Segoe UI", sans-serif;
+    font-size: 12px;
+    line-height: 1em;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 9999;
+}
+
+.user-authentication button {
+    background: transparent;
+    padding: 0;
+    border: 0;
+    border-style: none;
+    outline: 0;
+    cursor: pointer;
+    color: inherit;
+    font-family: inherit;
+}
+
+.user-authentication input {
+    background: transparent;
+    padding: 0;
+    border: 0;
+    outline: 0;
+}
+
+.user-authentication input::placeholder {
+    font-size: 0.85rem;
+    font-weight: 300;
+    letter-spacing: 0.1rem;
+    color: #aaa;
+}
+
+/* ── Container ── */
+.user_options-container {
+    position: relative;
+    width: 80%;
+    min-height: 350px;
+}
+
+/* ── Text panels ─── */
+.user_options-text {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    background-color: #e29805e7;
+    /* BLACK */
+    border-radius: 3px;
+}
+
+.user_options-registered,
+.user_options-unregistered {
+    width: 50%;
+    padding: 75px 45px;
+    color: #fff;
+    font-weight: 300;
+}
+
+.user_registered-title,
+.user_unregistered-title {
+    margin-bottom: 15px;
+    font-size: 1.66rem;
+    font-weight: 600;
+    line-height: 1em;
+    color: #fff;
+}
+
+.user_registered-text,
+.user_unregistered-text {
+    font-size: 0.95rem;
+    line-height: 1.6em;
+    letter-spacing: 0.3px;
+    color: #fff;
+    /* whiter text */
+}
+
+.user_registered-login,
+.user_unregistered-signup {
+    display: inline-block;
+    margin-top: 30px;
+    border: 1px solid #fff !important;
+    border-style: solid !important;
+    border-radius: 3px;
+    padding: 10px 30px;
+    color: #fff;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.2rem;
+    transition: background-color 0.2s, color 0.2s;
+    background: transparent;
+}
+
+.user_registered-login:hover,
+.user_unregistered-signup:hover {
+    background-color: #fff;
+    color: #111;
+}
+
+/* ── Sliding card ── */
+.user_options-forms {
+    position: absolute;
+    top: 50%;
+    left: 30px;
+    width: calc(50% - 30px);
+    min-height: 420px;
+    background-color: #fff;
+    border-radius: 3px;
+    box-shadow: 2px 0 20px rgba(0, 0, 0, 0.35);
+    overflow: hidden;
+    transform: translate3d(100%, -50%, 0);
+    transition: transform 0.4s ease-in-out;
+}
+
+/* ── Individual form panels ── */
+.user_forms-login,
+.user_forms-signup,
+.user_forms-forgot {
+    position: absolute;
+    top: 70px;
+    left: 40px;
+    width: calc(100% - 80px);
+    transition: opacity 0.4s ease-in-out, visibility 0.4s ease-in-out, transform 0.5s ease-in-out;
+}
+
+.user_forms-login {
+    opacity: 1;
+    visibility: visible;
+    transform: translate3d(0, 0, 0);
+}
+
+.user_forms-signup {
+    opacity: 0;
+    visibility: hidden;
+    transform: translate3d(120px, 0, 0);
+}
+
+.user_forms-forgot {
+    opacity: 0;
+    visibility: hidden;
+    transform: translate3d(120px, 0, 0);
+}
+
+/* ── Form styling ── */
+.forms_form {
+    margin: 0;
+}
+
+.forms_fieldset {
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
+.forms_title {
+    margin: 0 0 35px;
+    font-size: 1.4rem;
+    font-weight: 700;
+    line-height: 1em;
+    text-transform: uppercase;
+    color: #000;
+    /* title in black */
+    letter-spacing: 0.1rem;
+}
+
+.forms_field {
+    margin-bottom: 22px;
+}
+
+.forms_field:last-of-type {
+    margin-bottom: 0;
+}
+
+.forms_field-input {
+    width: 100%;
+    border-top: none !important;
+    border-right: none !important;
+    border-left: none !important;
+    border-bottom: 1.5px solid #ddd !important;
+    padding: 8px 0;
+    font-size: 0.95rem;
+    font-weight: 400;
+    color: #0f0e0d;
+    letter-spacing: 0.05rem;
+    transition: border-color 0.2s;
+    font-family: inherit;
+    background: transparent;
+    border-radius: 0;
+}
+
+.forms_field-input:focus {
+    border-color: #e8716d;
+}
+
+.forms_field {
+    position: relative;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 0;
+    bottom: 8px;
+    color: #aaa;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px;
+    transition: color 0.2s;
+    background: transparent;
+    border: none;
+}
+
+.password-toggle:hover {
+    color: #e8716d;
+}
+
+.forms_buttons {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 32px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.user_forms-signup .forms_buttons {
+    justify-content: flex-end;
+}
+
+.forms_buttons-forgot {
+    font-size: 0.8rem;
+    letter-spacing: 0.05rem;
+    color: #bbb;
+    text-decoration: underline;
+    transition: color 0.2s;
+}
+
+.forms_buttons-forgot:hover {
+    color: #888;
+}
+
+.forms_buttons-action {
+    background-color: #e8716d !important;
+    border-radius: 3px;
+    padding: 10px 32px;
+    font-size: 0.85rem;
+    font-family: inherit;
+    font-weight: 600;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.12rem;
+    transition: background-color 0.2s, transform 0.1s;
+    border: none;
+}
+
+.forms_buttons-action:hover {
+    background-color: #e14641 !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(232, 113, 109, 0.4);
+}
+
+.forms_buttons-action:active {
+    transform: scale(0.97);
+}
+
+.forms_buttons-action:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.forms_buttons-mb-button {
+    display: none;
+}
+
+/* ── Status alerts ── */
+.forms_alert {
+    position: absolute;
+    top: 10px;
+    left: 20px;
+    right: 20px;
+    z-index: 10;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    text-align: center;
+    font-family: inherit;
+}
+
+.forms_alert--error {
+    background: #ffebee;
+    color: #c62828;
+    border: 1px solid #ffcdd2;
+}
+
+.forms_alert--success {
+    background: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #c8e6c9;
+}
+
+/* ── show-signup ── */
+.user_options-forms.show-signup {
+    transform: translate3d(2%, -50%, 0);
+}
+
+.user_options-forms.show-signup .user_forms-login {
+    opacity: 0;
+    visibility: hidden;
+    transform: translate3d(-150%, 0, 0);
+}
+
+.user_options-forms.show-signup .user_forms-signup {
+    opacity: 1;
+    visibility: visible;
+    transform: translate3d(0, 0, 0);
+}
+
+/* ── show-login ── */
+.user_options-forms.show-login {
+    transform: translate3d(2%, -50%, 0);
+}
+
+.user_options-forms.show-login .user_forms-signup {
+    opacity: 0;
+    visibility: hidden;
+    transform: translate3d(150%, 0, 0);
+}
+
+.user_options-forms.show-login .user_forms-login {
+    opacity: 1;
+    visibility: visible;
+    transform: translate3d(0, 0, 0);
+}
+
+/* ── show-forgotPass ── */
+.user_options-forms.show-forgotPass {
+    transform: translate3d(100%, -50%, 0);
+}
+
+.user_options-forms.show-forgotPass .user_forms-forgot {
+    opacity: 1;
+    visibility: visible;
+    transform: translate3d(0, 0, 0);
+}
+
+.user_options-forms.show-forgotPass .user_forms-login {
+    opacity: 0;
+    visibility: hidden;
+    transform: translate3d(-120%, 0, 0);
+}
+
+.user_options-forms.show-forgotPass .user_forms-signup {
+    opacity: 0;
+    visibility: hidden;
+    transform: translate3d(150%, 0, 0);
+}
+
+/* ── bounceLeft (sign up clicked) ── */
+.user_options-forms.bounceLeft {
+    animation: bounceLeft 1s forwards;
+}
+
+.user_options-forms.bounceLeft .user_forms-signup {
+    animation: showSignUp 1s forwards;
+}
+
+.user_options-forms.bounceLeft .user_forms-login {
+    opacity: 0;
+    visibility: hidden;
+    transform: translate3d(-120px, 0, 0);
+}
+
+/* ── bounceRight (login clicked) ── */
+.user_options-forms.bounceRight {
+    animation: bounceRight 1s forwards;
+}
+
+/* ── Keyframes ── */
+@keyframes bounceLeft {
+    0% {
+        transform: translate3d(100%, -50%, 0);
+    }
+
+    50% {
+        transform: translate3d(-30px, -50%, 0);
+    }
+
+    100% {
+        transform: translate3d(0, -50%, 0);
+    }
+}
+
+@keyframes bounceRight {
+    0% {
+        transform: translate3d(0, -50%, 0);
+    }
+
+    50% {
+        transform: translate3d(calc(100% + 30px), -50%, 0);
+    }
+
+    100% {
+        transform: translate3d(100%, -50%, 0);
+    }
+}
+
+@keyframes showSignUp {
+    100% {
+        opacity: 1;
+        visibility: visible;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+/* ── Responsive: tablet ── */
+@media screen and (max-width: 990px) {
+    .user_options-container {
+        width: 90%;
+    }
+
+    .user_options-forms {
+        min-height: 360px;
+    }
+
+    .user_forms-login,
+    .user_forms-signup {
+        top: 40px;
+    }
+
+    .forms_buttons {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .user_forms-login .forms_buttons-action {
+        margin-top: 10px;
+    }
+
+    .user_options-registered,
+    .user_options-unregistered {
+        padding: 50px 35px;
+    }
+}
+
+/* ── Responsive: mobile ── */
+@media screen and (max-width: 580px) {
+    .user_options-text {
+        display: none;
+    }
+
+    .user_options-forms {
+        width: 96%;
+        left: 2%;
+        min-height: 400px !important;
+        transform: translate3d(0, -50%, 0);
+    }
+
+    .forms_title {
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .forms_buttons-mb-button {
+        display: block;
+        border: 2px solid #e8716d;
+        color: #e8716d;
+        padding: 10px 26px;
+        margin: 15px auto 0;
+        font-size: 0.85rem;
+        border-radius: 3px;
+        text-transform: uppercase;
+        letter-spacing: 0.1rem;
+        transition: background-color 0.2s, color 0.2s;
+        cursor: pointer;
+    }
+
+    .forms_buttons-mb-button:hover {
+        background-color: #e8716d;
+        color: #fff;
+    }
+}
+
+/* Dividers */
+.forms_divider {
+    text-align: center;
+    position: relative;
+    margin: 20px 0;
+    color: #888;
+    font-size: 0.9rem;
+}
+
+.forms_divider::before,
+.forms_divider::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 42%;
+    height: 1px;
+    background: #444;
+}
+
+.forms_divider::before {
+    left: 0;
+}
+
+.forms_divider::after {
+    right: 0;
+}
+
+/* Google Button */
+.forms_buttons-google {
+    width: 100%;
+    height: 45px;
+    background: #fff;
+    color: #444;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 5px;
+}
+
+.forms_buttons-google:hover {
+    background: #f1f1f1;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.forms_buttons-google img {
+    width: 20px;
+    height: 20px;
+}

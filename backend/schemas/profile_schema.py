@@ -4,6 +4,7 @@ from datetime import datetime
 from uuid import UUID
 
 class ProfileUpdate(BaseModel):
+    username: Optional[str] = None
     display_name: Optional[str] = None
     bio: Optional[str] = None
     diet_type: Optional[str] = None
@@ -14,6 +15,8 @@ class ProfileUpdate(BaseModel):
 
 class UserProfile(BaseModel):
     id: UUID
+    username: str
+    email: str
     display_name: str
     bio: str
     avatar_path: str
@@ -24,5 +27,6 @@ class UserProfile(BaseModel):
     cooking_skill: str
     recipes_cooked: int
     recipes_saved: int
+    recipes_saved_ids: List[UUID]
     member_since: datetime
     avatar_url: Optional[str] = ""
