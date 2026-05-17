@@ -9,6 +9,8 @@ interface ProfileContextType {
     updateProfile: (data: ProfileUpdate) => Promise<void>;
     uploadAvatar: (file: File) => Promise<void>;
     toggleSaveRecipe: (recipeId: string, currentlySaved: boolean) => Promise<void>;
+    customizeRecipe: (recipeId: string, data: any) => Promise<void>;
+    deleteCustomization: (recipeId: string) => Promise<void>;
     refresh: () => Promise<void>;
 }
 
@@ -64,8 +66,20 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }
     };
 
+    const customizeRecipe = async (recipeId: string, data: any) => {
+        await profileService.customizeRecipe(recipeId, data);
+        await fetchProfile();
+    };
+
+    const deleteCustomization = async (recipeId: string) => {
+        await profileService.deleteCustomization(recipeId);
+        await fetchProfile();
+    };
+
     return (
-        <ProfileContext.Provider value={{ profile, loading, error, updateProfile, uploadAvatar, toggleSaveRecipe, refresh: fetchProfile }}>
+        <ProfileContext.Provider value={{
+            profile, loading, error, updateProfile, uploadAvatar, toggleSaveRecipe, customizeRecipe, deleteCustomization, refresh: fetchProfile
+        }}>
             {children}
         </ProfileContext.Provider>
     );

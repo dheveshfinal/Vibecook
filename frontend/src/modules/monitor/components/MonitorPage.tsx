@@ -74,7 +74,6 @@ const getModuleStyle = (module: string): React.CSSProperties => {
 const styles: Record<string, React.CSSProperties> = {
     container: {
         padding: "24px",
-        marginLeft: "280px", // Accommodate sidebar
         background: "#f9f1eb",
         minHeight: "100vh",
         fontFamily: "'Inter', sans-serif",

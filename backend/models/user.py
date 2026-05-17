@@ -19,3 +19,12 @@ CREATE TABLE IF NOT EXISTS users (
     member_since   TIMESTAMPTZ DEFAULT NOW()
 );
 """
+CREATE_FOLLOWS_TABLE = """
+CREATE TABLE IF NOT EXISTS follows (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    follower_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    followed_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    followed_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(follower_id, followed_id)
+);
+"""

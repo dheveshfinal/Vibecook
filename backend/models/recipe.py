@@ -25,3 +25,17 @@ CREATE TABLE IF NOT EXISTS saved_recipes (
     UNIQUE(user_id, recipe_id)
 );
 """
+
+CREATE_CUSTOMIZED_RECIPES_TABLE = """
+CREATE TABLE IF NOT EXISTS customized_recipes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    original_recipe_id UUID REFERENCES recipes(id) ON DELETE CASCADE,
+    title VARCHAR(200),
+    ingredients TEXT,
+    steps TEXT,
+    note TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(user_id, original_recipe_id)
+);
+"""

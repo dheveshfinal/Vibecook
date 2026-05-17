@@ -83,7 +83,6 @@ const ChatPage: React.FC = () => {
 
 const styles: Record<string, React.CSSProperties> = {
     container: {
-        marginLeft: 280,
         flex: 1,
         display: "flex",
         flexDirection: "column",

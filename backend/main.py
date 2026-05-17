@@ -22,6 +22,8 @@ from models import (
     CREATE_CHAT_HISTORY_TABLE,
     CREATE_DOCUMENTS_TABLE,
     CREATE_TASK_LOGS_TABLE,
+    CREATE_FOLLOWS_TABLE,
+    CREATE_CUSTOMIZED_RECIPES_TABLE,
 )
 
 from services.auth_service import AuthService
@@ -78,9 +80,11 @@ async def init_db(pool):
         await conn.execute(CREATE_USERS_TABLE)
         await conn.execute(CREATE_RECIPES_TABLE)
         await conn.execute(CREATE_SAVED_RECIPES_TABLE)
+        await conn.execute(CREATE_CUSTOMIZED_RECIPES_TABLE)
         await conn.execute(CREATE_CHAT_HISTORY_TABLE)
         await conn.execute(CREATE_DOCUMENTS_TABLE)
         await conn.execute(CREATE_TASK_LOGS_TABLE)
+        await conn.execute(CREATE_FOLLOWS_TABLE)
 
 # ── Health ───────────────────────────────────────────────────────────────────
 @app.get("/api/health")

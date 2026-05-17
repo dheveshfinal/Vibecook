@@ -20,6 +20,11 @@ def publish_progress(recipe_id, status, progress):
 
 
 def rule_based_extract(content: str) -> dict:
+    # Clean unicode bullets
+    content = re.sub(r'[\uf0a7\u2022\u25cf\u25e6\u2023\u2043]', ' ', content)
+    # Fix glued text (e.g., taste1.Preheat -> taste\n1. Preheat)
+    content = re.sub(r'([a-z])(\d+[\.\)]\s*[A-Z])', r'\1\n\2', content)
+    
     lines = [l.strip() for l in content.split('\n') if l.strip()]
     
     INGREDIENT_HEADERS = {"ingredients", "ingredient list", "you'll need", "you will need", "items"}
@@ -60,8 +65,8 @@ def rule_based_extract(content: str) -> dict:
 
         # 2. Section detection (Check headers first)
         lower = line.lower().rstrip(':').strip()
-        is_ing_header = lower in INGREDIENT_HEADERS or (len(lower) < 15 and "ingredient" in lower)
-        is_step_header = lower in STEP_HEADERS or "instruction" in lower or (len(lower) < 15 and "direction" in lower)
+        is_ing_header = lower in INGREDIENT_HEADERS or (len(lower) < 25 and "ingredient" in lower) or re.search(r'(ingredients|ingredient list)\s*(steps|instructions)?$', lower)
+        is_step_header = lower in STEP_HEADERS or "instruction" in lower or (len(lower) < 25 and "direction" in lower)
         is_sub_header = re.match(r'^for the\b', lower) or lower in {
             "filling", "marinade", "sauce", "garnish", "topping", "toppings",
             "base", "crust", "stuffing", "spice mix", "spice blend", "syrup",
@@ -103,12 +108,16 @@ def rule_based_extract(content: str) -> dict:
         # Ingredients / Limbo Section
         is_qty_only = re.match(r'^[\d½⅓¼⅔¾\.\/]+(\s+(large|small|pint|quart|cup|tbsp|tsp|g|kg|oz|lb|ml|l|can|pckg|clove|pinch|whole|cloves|teaspoon|tablespoon))?$', lower)
         is_numeric_start = re.match(r'^\d+[\s\.]', line) or re.match(r'^[½⅓¼⅔¾]', line)
+        is_numbered_step = bool(re.match(r'^\d+[\.\)]\s*[A-Za-z]', line))
 
         if current_section == "ingredients":
-            # Detect step transition (prose in ingredients or ends with period)
+            # Detect step transition (prose in ingredients or clearly numbered step)
             has_period = line.strip().endswith('.')
-            if (len(line) > 50 or has_period) and not is_numeric_start and not is_qty_only and " of " not in lower:
-                flush_buffer()
+            is_long_prose = (len(line) > 50 or has_period) and not is_numeric_start and not is_qty_only and " of " not in lower
+            
+            if is_long_prose or is_numbered_step:
+                val = flush_buffer()
+                if len(val) > 2: result["ingredients"].append(val)
                 current_section = "steps"
                 # (Recurse logic by hand)
                 sub_sentences = re.split(r'(?<=[.!?])\s+', line)
@@ -176,21 +185,23 @@ def is_poor_extraction(extracted: dict) -> bool:
     """Check if rule-based extraction got too little data."""
     ingredient_count = len([l for l in extracted["ingredients"].split('\n') if l.strip()])
     step_count = len([l for l in extracted["steps"].split('\n') if l.strip()])
-    return ingredient_count < 3 or step_count < 2
+    return ingredient_count < 2 or step_count < 2
 
 
 async def llm_based_extract(content: str) -> dict:
     """LLM-based extraction fallback for when rule-based parsing fails."""
-    prompt = """From the recipe text below, extract and return ONLY a JSON object with these exact keys:
-- title: string
-- ingredients: newline-separated list of ingredients with quantities
-- steps: newline-separated list of cooking steps in order
-- cuisine: string (e.g. Indian, Italian) or empty string
-- time_mins: integer (total cook+prep time) or 30
-- spice: one of "Mild", "Medium", "Hot" or empty string
-- diet: "Veg" or "Non-Veg"
+    prompt = """You are an expert culinary assistant. From the recipe text provided below, extract and structure the information into a single JSON object.
 
-Return ONLY the JSON object. No explanation, no markdown, no extra text."""
+CRITICAL FORMATTING RULES:
+1. Extract EXACTLY these keys: "title", "ingredients", "steps", "cuisine", "time_mins", "spice", "diet".
+2. "ingredients": string (a newline-separated list. Format each line as "- [quantity] [unit] [ingredient name]". DO NOT mix instructions here. Be exhaustive.)
+3. "steps": string (a newline-separated list of instructions. Format each line as "1. [step details]", "2. [step details]". DO NOT include list of ingredients here. Separate actions clearly.)
+4. "time_mins": integer (total preparation and cooking time in minutes. If missing, use 30)
+5. "spice": string (must be exactly "Mild", "Medium", "Hot", or "")
+6. "diet": string (must be exactly "Veg" or "Non-Veg", based on meat/seafood presence)
+
+Return ONLY valid, parseable JSON. No preamble, no explanation, no markdown text blocks."""
+
 
     try:
         raw = await rag_pipeline.generate_response(prompt, [content], raw_prompt=True)

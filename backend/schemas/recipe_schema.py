@@ -33,3 +33,21 @@ class Recipe(RecipeBase):
     document_path: Optional[str] = ""
     created_at: datetime
     image_display_url: Optional[str] = ""
+
+class CustomizedRecipeBase(BaseModel):
+    title: Optional[str] = None
+    ingredients: Optional[str] = None
+    steps: Optional[str] = None
+    note: Optional[str] = None
+
+class CustomizedRecipeCreate(CustomizedRecipeBase):
+    pass
+
+class CustomizedRecipeUpdate(CustomizedRecipeBase):
+    pass
+
+class CustomizedRecipe(CustomizedRecipeBase):
+    id: UUID
+    user_id: UUID
+    original_recipe_id: UUID
+    created_at: datetime

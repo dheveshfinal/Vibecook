@@ -15,6 +15,9 @@ export interface UserProfile {
     recipes_saved_ids: string[];
     member_since: string;
     avatar_url: string;
+    followers_count: number;
+    following_count: number;
+    is_following: boolean;
 }
 
 export interface ProfileUpdate {

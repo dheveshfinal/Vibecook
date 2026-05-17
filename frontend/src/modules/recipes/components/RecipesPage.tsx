@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useRecipes } from "../hooks/useRecipes";
 import RecipeCard from "./RecipeCard";
-import RecipeDetailView from "./RecipeDetailView";
+import RecipeDetailView from "../../RecipeDetails/components/RecipeDetailView";
 import type { Recipe } from "../types";
 import { recipeService } from "../service/recipeService";
 import SearchBar from "./SearchBar";
@@ -112,7 +112,6 @@ const RecipesPage: React.FC<RecipesPageProps> = ({ onStartCooking }) => {
 
 const styles: Record<string, React.CSSProperties> = {
     container: {
-        marginLeft: 280,
         flex: 1,
         display: "flex",
         flexDirection: "column",

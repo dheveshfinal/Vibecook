@@ -17,12 +17,37 @@ const getAuthOnlyHeader = () => {
 };
 
 export const profileService = {
-    async getProfile(): Promise<UserProfile> {
-        const response = await fetch(`${API_BASE}/api/v1/profile/me`, {
+    async getProfile(userIdOrUsername?: string): Promise<UserProfile> {
+        const path = userIdOrUsername ? `${API_BASE}/api/v1/profile/${userIdOrUsername}` : `${API_BASE}/api/v1/profile/me`;
+        const response = await fetch(path, {
             headers: getHeaders()
         });
         if (!response.ok) throw new Error("Failed to fetch profile");
         return response.json();
+    },
+
+    async searchUsers(username: string): Promise<any[]> {
+        const response = await fetch(`${API_BASE}/api/v1/profile/search?username=${username}`, {
+            headers: getHeaders()
+        });
+        if (!response.ok) throw new Error("Failed to search users");
+        return response.json();
+    },
+
+    async followUser(userId: string): Promise<void> {
+        const response = await fetch(`${API_BASE}/api/v1/profile/${userId}/follow`, {
+            method: "POST",
+            headers: getHeaders()
+        });
+        if (!response.ok) throw new Error("Failed to follow user");
+    },
+
+    async unfollowUser(userId: string): Promise<void> {
+        const response = await fetch(`${API_BASE}/api/v1/profile/${userId}/unfollow`, {
+            method: "POST",
+            headers: getHeaders()
+        });
+        if (!response.ok) throw new Error("Failed to unfollow user");
     },
 
     async updateProfile(_: string, data: ProfileUpdate): Promise<void> {
@@ -86,8 +111,9 @@ export const profileService = {
         return recipeId;
     },
 
-    async getSavedRecipes(_?: string): Promise<any[]> {
-        const response = await fetch(`${API_BASE}/api/v1/recipes/me/saved`, {
+    async getSavedRecipes(userId?: string): Promise<any[]> {
+        const path = userId ? `${API_BASE}/api/v1/recipes/users/${userId}/saved` : `${API_BASE}/api/v1/recipes/me/saved`;
+        const response = await fetch(path, {
             headers: getHeaders()
         });
         if (!response.ok) throw new Error("Failed to fetch saved recipes");
@@ -108,5 +134,29 @@ export const profileService = {
             headers: getHeaders()
         });
         if (!response.ok) throw new Error("Failed to unsave recipe");
+    },
+
+    async customizeRecipe(recipeId: string, data: { title?: string, ingredients?: string, steps?: string, note?: string }): Promise<void> {
+        const response = await fetch(`${API_BASE}/api/v1/recipes/me/customize/${recipeId}`, {
+            method: "POST",
+            headers: getHeaders(),
+            body: JSON.stringify(data),
+        });
+        if (!response.ok) throw new Error("Failed to customize recipe");
+    },
+
+    async getCustomizedRecipes(userIdOrUsername: string): Promise<any[]> {
+        const response = await fetch(`${API_BASE}/api/v1/profile/${userIdOrUsername}/customized`, {
+            headers: getHeaders()
+        });
+        if (!response.ok) throw new Error("Failed to fetch customized recipes");
+        return response.json();
+    },
+    async deleteCustomization(recipeId: string): Promise<void> {
+        const response = await fetch(`${API_BASE}/api/v1/recipes/me/customize/${recipeId}`, {
+            method: "DELETE",
+            headers: getHeaders()
+        });
+        if (!response.ok) throw new Error("Failed to delete customization");
     }
 };

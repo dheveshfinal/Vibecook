@@ -4,6 +4,7 @@ import { profileService } from "../service/profileService";
 import CatLoader from "../../loading/components/Loading";
 import UserInfoPanel from "../components/Userinfopanel";
 import SavedRecipesPanel from "../components/Savedrecipespanel";
+import FollowersModal from "../components/FollowersModal";
 import { authService } from "../../Auth/service/authService";
 
 const COLORS = {
@@ -25,14 +26,29 @@ const dietColors: Record<string, { bg: string; color: string }> = {
     Vegan: { bg: "#e0f7fa", color: "#00695c" },
 };
 
-const ProfilePage: React.FC = () => {
-    const { profile, loading, updateProfile, uploadAvatar } = useProfile();
+interface ProfilePageProps {
+    username?: string;
+    onBack?: (page: string, params?: any) => void;
+    onRecipeClick?: (recipe: any) => void;
+}
+
+const ProfilePage: React.FC<ProfilePageProps> = ({ username, onBack, onRecipeClick }) => {
+    const { profile: myProfile, loading: myLoading, updateProfile, uploadAvatar } = useProfile();
+    const [viewedProfile, setViewedProfile] = useState<any>(null);
+    const [viewLoading, setViewLoading] = useState(false);
+
+    const isOwnProfile = !username || username === myProfile?.username;
+    const profile = isOwnProfile ? myProfile : viewedProfile;
+    const loading = isOwnProfile ? myLoading : viewLoading;
     const role = authService.getUserRole();
     const [editMode, setEditMode] = useState(false);
     const [saving, setSaving] = useState(false);
     const [saveMsg, setSaveMsg] = useState("");
     const [avatarPreview, setAvatarPreview] = useState<string>("");
     const [uploading, setUploading] = useState(false);
+
+    // Follow Stats Mode
+    const [statsModal, setStatsModal] = useState<"followers" | "following" | null>(null);
 
     // Admin State
     const [recipeTitle, setRecipeTitle] = useState("");
@@ -46,9 +62,79 @@ const ProfilePage: React.FC = () => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const recipeImgRef = useRef<HTMLInputElement>(null);
     const docInputRef = useRef<HTMLInputElement>(null);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+
+    const handleSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const q = e.target.value;
+        setSearchQuery(q);
+        if (q.length > 2) {
+            setIsSearching(true);
+            try {
+                const results = await profileService.searchUsers(q);
+                setSearchResults(results);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setIsSearching(false);
+            }
+        } else {
+            setSearchResults([]);
+        }
+    };
+
+    const handleUserNavigate = (targetUsername: string) => {
+        if (onBack) onBack("profile"); // Clear params
+        // Since we are already on ProfilePage, we need to trigger a re-navigation or update props.
+        // App.tsx handles navigation via handleNavigate("profile", { username }).
+        // We'll call onBack and then re-navigate if onBack is passed as handleNavigate from App.
+        // Better: update URL/state in App.tsx. 
+        // For now, if we are in App.tsx, handleNavigate updates state.
+
+        // Actually, the simplest way is to just let the props update. 
+        // We'll call onBack("profile", { username: targetUsername }) if onBack supports it.
+        // Wait, onBack in App.tsx is handleNavigate("profile").
+        // I should probably pass a real navigate function.
+
+        // Let's assume onBack is the navigation handler from App.tsx.
+        if (onBack) onBack("profile", { username: targetUsername });
+        setSearchQuery("");
+        setSearchResults([]);
+    };
+
+    React.useEffect(() => {
+        if (username && username !== myProfile?.username) {
+            setViewLoading(true);
+            profileService.getProfile(username)
+                .then(setViewedProfile)
+                .catch(err => console.error("Error loading viewed profile:", err))
+                .finally(() => setViewLoading(false));
+        } else {
+            setViewedProfile(null);
+        }
+    }, [username, myProfile?.username]);
 
     if (loading && !profile) return <CatLoader />;
-    if (!profile) return <div>Error loading profile.</div>;
+    if (!profile) return <div style={{ padding: 48, textAlign: "center" }}>
+        <h3>User not found</h3>
+        <button style={styles.editBtn} onClick={() => onBack?.("profile")}>Go Back</button>
+    </div>;
+
+    const handleFollow = async () => {
+        if (!profile) return;
+        try {
+            if (profile.is_following) {
+                await profileService.unfollowUser(profile.id);
+                setViewedProfile({ ...profile, is_following: false, followers_count: profile.followers_count - 1 });
+            } else {
+                await profileService.followUser(profile.id);
+                setViewedProfile({ ...profile, is_following: true, followers_count: profile.followers_count + 1 });
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
 
     const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -125,6 +211,49 @@ const ProfilePage: React.FC = () => {
     return (
         <main style={styles.main}>
             {/* ── Header ── */}
+            {/* Moving Search to Profile Header */}
+            <div style={styles.profileHeader}>
+                <div style={styles.searchWrap}>
+                    <div style={styles.searchInner}>
+                        <svg fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" width={18} height={18} style={{ color: "#aaa" }}>
+                            <circle cx={11} cy={11} r={8} />
+                            <line x1={21} y1={21} x2={16.65} y2={16.65} />
+                        </svg>
+                        <input
+                            style={styles.profileSearchInput}
+                            placeholder="Find other foodies..."
+                            value={searchQuery}
+                            onChange={handleSearch}
+                        />
+                        {isSearching && <div style={styles.loaderSmall} />}
+                    </div>
+                    {searchResults.length > 0 && (
+                        <div style={styles.searchDropdown}>
+                            {searchResults.map(user => (
+                                <div key={user.id} style={styles.searchItem} onClick={() => handleUserNavigate(user.username)}>
+                                    <div style={styles.searchAvatar}>
+                                        {user.avatar_url ? <img src={user.avatar_url} style={styles.avatarMini} /> : "👤"}
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={styles.searchName}>{user.display_name}</div>
+                                        <div style={styles.searchUsername}>@{user.username}</div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {!isOwnProfile && (
+                    <button style={styles.searchBackBtn} onClick={() => onBack?.("profile")}>
+                        <svg fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" width={16} height={16}>
+                            <path d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        Back to My Profile
+                    </button>
+                )}
+            </div>
+
             <div style={styles.heroBanner}>
                 <div style={styles.heroOverlay} />
                 <div style={styles.heroContent}>
@@ -139,6 +268,16 @@ const ProfilePage: React.FC = () => {
                     <div style={styles.heroInfo}>
                         <div style={styles.heroName}>{profile.display_name}</div>
                         <div style={styles.heroSub}>Cooking enthusiast since {new Date(profile.member_since).getFullYear()}</div>
+                        {!isOwnProfile && (
+                            <div style={{ display: "flex", gap: "12px", marginTop: "12px" }}>
+                                <button style={profile.is_following ? styles.unfollowBtn : styles.followBtn} onClick={handleFollow}>
+                                    {profile.is_following ? "Unfollow" : "Follow"}
+                                </button>
+                                <button style={styles.backBtn} onClick={() => onBack?.("profile")}>
+                                    My Profile
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -147,7 +286,9 @@ const ProfilePage: React.FC = () => {
                 <div style={styles.statsBar}>
                     <StatItem value={profile.recipes_saved} label="Recipes Saved" />
                     <div style={styles.statDivider} />
-                    <StatItem value={profile.recipes_cooked} label="Times Cooked" />
+                    <StatItem value={profile.followers_count || 0} label="Followers" onClick={() => setStatsModal("followers")} />
+                    <div style={styles.statDivider} />
+                    <StatItem value={profile.following_count || 0} label="Following" onClick={() => setStatsModal("following")} />
                     <div style={styles.statDivider} />
                     <StatItem value={profile.cooking_skill} label="Skill Level" />
                 </div>
@@ -157,7 +298,7 @@ const ProfilePage: React.FC = () => {
                 <div style={{ display: "flex", gap: "24px", alignItems: "stretch" }}>
                     {/* ── NEW: User Information Panel (Left) ── */}
                     <div style={{ flex: 1 }}>
-                        <UserInfoPanel />
+                        <UserInfoPanel profile={profile} isOwnProfile={isOwnProfile} />
                     </div>
 
                     {/* ── Existing: Profile Card (Right) ── */}
@@ -197,9 +338,11 @@ const ProfilePage: React.FC = () => {
                                             </button>
                                         </>
                                     )}
-                                    <button style={editMode ? styles.saveBtn : styles.editBtn} onClick={editMode ? handleSaveProfile : () => setEditMode(true)}>
-                                        {editMode ? (saving ? "Saving..." : "Save") : "Edit"}
-                                    </button>
+                                    {isOwnProfile && (
+                                        <button style={editMode ? styles.saveBtn : styles.editBtn} onClick={editMode ? handleSaveProfile : () => setEditMode(true)}>
+                                            {editMode ? (saving ? "Saving..." : "Save") : "Edit"}
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                             {saveMsg && <div style={styles.saveMsg}>{saveMsg}</div>}
@@ -266,11 +409,11 @@ const ProfilePage: React.FC = () => {
 
                 {/* ── NEW: Saved & Customized Recipes Panel ── */}
                 <div style={styles.fullWidthCard}>
-                    <SavedRecipesPanel />
+                    <SavedRecipesPanel viewedUserId={isOwnProfile ? undefined : profile.username} onRecipeClick={onRecipeClick} />
                 </div>
 
-                {/* ── Existing: Admin Feature ── */}
-                {role === 'admin' && (
+                {/* ── Existing: Admin Feature (Only for own profile) ── */}
+                {role === 'admin' && isOwnProfile && (
                     <div style={styles.fullWidthCard}>
                         <div style={{ ...styles.card, border: `1.5px solid ${COLORS.primaryDark}`, background: "#fffcf9" }}>
                             <div style={styles.cardTitle}>👨‍🍳 Admin: Combined Recipe & Document Entry</div>
@@ -322,13 +465,21 @@ const ProfilePage: React.FC = () => {
                     </div>
                 )}
             </div>
+
+            <FollowersModal
+                isOpen={statsModal !== null}
+                onClose={() => setStatsModal(null)}
+                type={statsModal || "followers"}
+                username={profile.username}
+                onUserClick={handleUserNavigate}
+            />
         </main>
     );
 };
 
-function StatItem({ value, label }: { value: number | string; label: string }) {
+function StatItem({ value, label, onClick }: { value: number | string; label: string; onClick?: () => void }) {
     return (
-        <div style={styles.statItem}>
+        <div style={{ ...styles.statItem, cursor: onClick ? "pointer" : "default" }} onClick={onClick}>
             <div style={styles.statValue}>{typeof value === "number" ? value.toLocaleString() : value}</div>
             <div style={styles.statLabel}>{label}</div>
         </div>
@@ -336,7 +487,19 @@ function StatItem({ value, label }: { value: number | string; label: string }) {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-    main: { marginLeft: 280, backgroundColor: COLORS.bg, minHeight: "100vh", fontFamily: '"Inter", sans-serif', flex: 1, overflowY: "auto" },
+    main: { backgroundColor: COLORS.bg, minHeight: "100vh", fontFamily: '"Inter", sans-serif', flex: 1, overflowY: "auto", position: "relative" },
+    profileHeader: { padding: "20px 48px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "white", borderBottom: "1px solid #eee", position: "sticky", top: 0, zIndex: 100 },
+    searchWrap: { position: "relative", width: "100%", maxWidth: "400px" },
+    searchInner: { display: "flex", alignItems: "center", gap: "10px", padding: "8px 16px", background: "#f5f5f5", borderRadius: "10px", border: "1px solid #eee" },
+    profileSearchInput: { background: "transparent", border: "none", outline: "none", width: "100%", fontSize: "14px", color: COLORS.text },
+    searchDropdown: { position: "absolute", top: "100%", left: 0, right: 0, background: "white", borderRadius: "12px", boxShadow: "0 10px 30px rgba(0,0,0,0.1)", marginTop: "8px", overflow: "hidden", zIndex: 1000 },
+    searchItem: { display: "flex", alignItems: "center", gap: "12px", padding: "12px 16px", cursor: "pointer", transition: "background 0.2s" },
+    searchAvatar: { width: "32px", height: "32px", borderRadius: "50%", background: "#eee", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" },
+    avatarMini: { width: "100%", height: "100%", objectFit: "cover" },
+    searchName: { fontSize: "14px", fontWeight: 600, color: COLORS.text },
+    searchUsername: { fontSize: "12px", color: COLORS.textMuted },
+    loaderSmall: { width: "16px", height: "16px", border: "2px solid #ddd", borderTop: "2px solid #FF7A3D", borderRadius: "50%", animation: "spin 1s linear infinite" },
+    searchBackBtn: { display: "flex", alignItems: "center", gap: "8px", background: "#f5f5f5", border: "none", padding: "8px 16px", borderRadius: "8px", cursor: "pointer", fontSize: "14px", fontWeight: 500, color: "#666", transition: "all 0.2s" },
     heroBanner: { padding: "60px 48px 120px", background: `linear-gradient(135deg, ${COLORS.primary} 0%, ${COLORS.primaryDark} 100%)`, position: "relative" },
     heroOverlay: { position: "absolute", inset: 0, background: "radial-gradient(circle at 80% 20%, rgba(255,255,255,0.1) 0%, transparent 60%)" },
     heroContent: { position: "relative", display: "flex", alignItems: "center", gap: 32, zIndex: 1 },
@@ -370,6 +533,9 @@ const styles: Record<string, React.CSSProperties> = {
     bioText: { fontSize: 14, lineHeight: 1.6 },
     textarea: { width: "100%", padding: 12, borderRadius: 12, border: "1px solid #ddd", fontFamily: "inherit" },
     saveMsg: { padding: "10px", background: "#e8f5e9", color: COLORS.success, borderRadius: 10, marginBottom: 16, fontSize: 13, fontWeight: 600 },
+    followBtn: { padding: "8px 24px", borderRadius: 10, background: "#fff", color: COLORS.primary, border: `2px solid #fff`, fontWeight: 700, cursor: "pointer", fontSize: 14 },
+    unfollowBtn: { padding: "8px 24px", borderRadius: 10, background: "rgba(255,255,255,0.2)", color: "#fff", border: "2px solid rgba(255,255,255,0.5)", fontWeight: 700, cursor: "pointer", fontSize: 14 },
+    backBtn: { padding: "8px 24px", borderRadius: 10, background: "transparent", color: "#fff", border: "2px solid rgba(255,255,255,0.5)", fontWeight: 700, cursor: "pointer", fontSize: 14 },
     errorBanner: { padding: "12px", background: "#ffebee", color: COLORS.danger, borderRadius: 10, marginBottom: 20, fontSize: 14, fontWeight: 700, border: "1px solid #ffcdd2" },
     inputLabel: { fontSize: 13, fontWeight: 700, color: COLORS.textMuted, textTransform: "uppercase", letterSpacing: "0.05em" },
     adminInput: { width: "100%", padding: "12px", borderRadius: 12, border: "1.5px solid #eee", background: "#fafafa", outline: "none" },

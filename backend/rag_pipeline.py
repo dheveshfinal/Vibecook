@@ -34,7 +34,7 @@ class RAGPipeline:
     def __init__(self):
         """Initialize RAG pipeline components."""
         try:
-            self.qdrant_client = QdrantClient(QDRANT_URL)
+            self.qdrant_client = QdrantClient(QDRANT_URL, timeout=30.0)
         except Exception as e:
             print(f"Warning: Qdrant not available at {QDRANT_URL}: {e}")
             self.qdrant_client = None

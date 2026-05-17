@@ -1,13 +1,17 @@
 from fastapi import APIRouter, HTTPException, Query, Request, File, UploadFile, Depends
 from typing import List, Optional
-from schemas.recipe_schema import Recipe, RecipeCreate, RecipeUpdate
 from services.recipe_service import RecipeService
+from services.customized_recipe_service import CustomizedRecipeService
 from services.monitor_service import MonitorService
 import uuid
 import shutil
 from pathlib import Path
 from tasks.document_tasks import process_recipe_document
-from api.deps import get_current_user
+from api.deps import get_current_user, oauth2_scheme
+from schemas.recipe_schema import (
+    Recipe, RecipeCreate, RecipeUpdate,
+    CustomizedRecipe, CustomizedRecipeCreate
+)
 
 router = APIRouter()
 
@@ -24,14 +28,57 @@ async def create_recipe(request: Request, body: RecipeCreate):
     recipe_id = await RecipeService.create_recipe(pool, body)
     return {"id": recipe_id, "message": "Recipe created"}
 
-@router.get("/{recipe_id}", response_model=Recipe)
-async def get_recipe(request: Request, recipe_id: str):
+@router.get("/users/{user_id_or_username}/saved", response_model=List[Recipe])
+async def get_public_saved_recipes(request: Request, user_id_or_username: str):
     pool = request.app.state.pool
+    return await RecipeService.get_saved_recipes(pool, user_id_or_username)
+
+@router.get("/{recipe_id}", response_model=Recipe)
+async def get_recipe(request: Request, recipe_id: str, owner_id: Optional[str] = Query(None), token: str = Depends(oauth2_scheme)):
+    pool = request.app.state.pool
+    
+    # Identify who we should look for customization for
+    target_user_id = owner_id
+    if not target_user_id:
+        # If no owner specified, try to see if current user has a customization
+        try:
+            from jose import jwt
+            from core.config import SECRET_KEY, ALGORITHM
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            target_user_id = payload.get("sub")
+        except:
+            pass
+
+    if target_user_id:
+        custom = await CustomizedRecipeService.get_customization(pool, target_user_id, recipe_id)
+        if custom:
+            # Shadow original values with customization
+            original = await RecipeService.get_recipe(pool, recipe_id)
+            if original:
+                # Merge original fields that aren't in customization (like image_path)
+                result = {**original, **custom}
+                # Title, ingredients, steps are shadowed if present in custom
+                if custom.get("title"): result["title"] = custom["title"]
+                if custom.get("ingredients"): result["ingredients"] = custom["ingredients"]
+                if custom.get("steps"): result["steps"] = custom["steps"]
+                return result
+
     recipe = await RecipeService.get_recipe(pool, recipe_id)
     if not recipe:
         raise HTTPException(404, "Recipe not found")
-    # Compatibility with schema (ingredients vs ingredients_list)
     return recipe
+
+@router.post("/me/customize/{recipe_id}")
+async def save_customization(request: Request, recipe_id: str, body: CustomizedRecipeCreate, user_id: str = Depends(get_current_user)):
+    pool = request.app.state.pool
+    await CustomizedRecipeService.save_customization(pool, user_id, recipe_id, body)
+    return {"message": "Recipe customized and saved"}
+
+@router.delete("/me/customize/{recipe_id}")
+async def delete_customization(request: Request, recipe_id: str, user_id: str = Depends(get_current_user)):
+    pool = request.app.state.pool
+    await CustomizedRecipeService.delete_customization(pool, user_id, recipe_id)
+    return {"message": "Customization deleted"}
 
 @router.put("/{recipe_id}")
 async def update_recipe(request: Request, recipe_id: str, body: RecipeUpdate):

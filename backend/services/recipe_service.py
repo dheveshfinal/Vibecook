@@ -86,9 +86,10 @@ class RecipeService:
                 SELECT r.*, sr.saved_at
                 FROM saved_recipes sr
                 JOIN recipes r ON r.id = sr.recipe_id
-                WHERE sr.user_id=$1::uuid
+                JOIN users u ON u.id = sr.user_id
+                WHERE u.id::text=$1 OR u.username=$1
                 ORDER BY sr.saved_at DESC
-            """, user_id)
+            """, str(user_id))
             results = []
             for r in rows:
                 d = dict(r)

@@ -29,8 +29,13 @@ function InfoRow({ label, value, icon }: InfoRowProps) {
     );
 }
 
-const UserInfoPanel: React.FC = () => {
-    const { profile, updateProfile } = useProfile();
+interface UserInfoPanelProps {
+    profile: any;
+    isOwnProfile: boolean;
+}
+
+const UserInfoPanel: React.FC<UserInfoPanelProps> = ({ profile, isOwnProfile }) => {
+    const { updateProfile } = useProfile();
     const [isEditing, setIsEditing] = React.useState(false);
     const [tempUsername, setTempUsername] = React.useState(profile?.username || "");
 
@@ -69,8 +74,8 @@ const UserInfoPanel: React.FC = () => {
                                 <button style={styles.miniSaveBtn} onClick={handleSave}>✓</button>
                             </div>
                         ) : (
-                            <div style={styles.username} onClick={() => setIsEditing(true)}>
-                                @{profile.username || "username"} ✎
+                            <div style={styles.username} onClick={() => isOwnProfile && setIsEditing(true)}>
+                                @{profile.username || "username"} {isOwnProfile && "✎"}
                             </div>
                         )}
                     </div>
@@ -95,9 +100,11 @@ const UserInfoPanel: React.FC = () => {
 
 
 
-            <button style={styles.editBtn} onClick={() => setIsEditing(!isEditing)}>
-                {isEditing ? "Cancel Edit" : "Edit Profile Info"}
-            </button>
+            {isOwnProfile && (
+                <button style={styles.editBtn} onClick={() => setIsEditing(!isEditing)}>
+                    {isEditing ? "Cancel Edit" : "Edit Profile Info"}
+                </button>
+            )}
         </div>
     );
 };

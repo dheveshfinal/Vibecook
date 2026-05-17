@@ -4,8 +4,8 @@ import RecipesPage from "./modules/recipes/components/RecipesPage";
 import ProfilePage from "./modules/profile/components/ProfilePage";
 import ChatPage from "./modules/chat/components/ChatPage";
 import MonitorPage from "./modules/monitor/components/MonitorPage";
-import CookingAssistantView from "./modules/recipes/components/CookingAssistantView";
-import ExplorerPage from "./modules/recipes/components/ExplorerPage";
+import CookingAssistantView from "./modules/Cooking/components/CookingAssistantView";
+import ExplorerPage from "./modules/Explorer/components/ExplorerPage";
 import AuthPage from "./modules/Auth/components/AuthPage";
 import { authService } from "./modules/Auth/service/authService";
 import { ProfileProvider } from "./modules/profile/context/ProfileContext";
@@ -13,18 +13,23 @@ import { ProfileProvider } from "./modules/profile/context/ProfileContext";
 export default function App() {
   const [activePage, setActivePage] = useState("auth");
   const [currentRecipe, setCurrentRecipe] = useState<any>(null);
+  const [profileParams, setProfileParams] = useState<any>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
     // Explicitly always start at auth per user request
     setActivePage("auth");
   }, []);
 
-  const handleNavigate = (page: string) => {
+  const handleNavigate = (page: string, params?: any) => {
     if (!authService.isAuthenticated()) {
       setActivePage("auth");
       return;
     }
+    setProfileParams(params || null);
     setActivePage(page);
+    // Auto-close sidebar on mobile after navigation
+    if (window.innerWidth < 768) setSidebarOpen(false);
   };
 
   const startCooking = (recipe: any) => {
@@ -43,7 +48,7 @@ export default function App() {
   const renderPage = () => {
     switch (activePage) {
       case "home": return <RecipesPage onStartCooking={startCooking} />;
-      case "profile": return <ProfilePage />;
+      case "profile": return <ProfilePage username={profileParams?.username} onBack={handleNavigate} onRecipeClick={startCooking} />;
       case "ai": return <ChatPage />;
       case "monitor": return <MonitorPage />;
       case "explore": return <ExplorerPage onStartCooking={startCooking} />;
@@ -58,8 +63,19 @@ export default function App() {
   return (
     <ProfileProvider>
       <div style={styles.root}>
-        <Sidebar activePage={activePage} onNavigate={handleNavigate} />
-        <div style={{ flex: 1, height: "100%", overflow: "auto" }}>
+        <Sidebar
+          activePage={activePage}
+          onNavigate={handleNavigate}
+          isOpen={sidebarOpen}
+          onToggle={() => setSidebarOpen(!sidebarOpen)}
+        />
+        <div style={{
+          flex: 1,
+          height: "100%",
+          overflow: "auto",
+          marginLeft: sidebarOpen ? 280 : 0,
+          transition: "margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+        }}>
           {renderPage()}
         </div>
       </div>

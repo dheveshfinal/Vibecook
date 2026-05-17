@@ -30,3 +30,6 @@ class UserProfile(BaseModel):
     recipes_saved_ids: List[UUID]
     member_since: datetime
     avatar_url: Optional[str] = ""
+    followers_count: int = 0
+    following_count: int = 0
+    is_following: bool = False
